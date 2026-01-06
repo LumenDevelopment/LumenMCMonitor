@@ -1,0 +1,63 @@
+
+# URL of discord webhook
+webhook_url: "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX"
+
+# Minimal logs level (SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST)
+min_level: "SEVERE"
+
+# Send from chat
+send_chat: true
+
+# Send player commands
+send_player_commands: false
+
+# Send console commands
+send_console_commands: false
+
+# Send uuid at prelogin
+send_uuid_prelogin: false
+
+# Send join and quit messages
+send_join_quit: true
+
+# Send death messages
+send_deaths: true
+
+# Send gamemode changes
+send_gamemode_changes: false
+
+# Send server load messages
+send_server_load: true
+
+
+
+
+
+##############################
+########## Advanced ##########
+##############################
+
+# Filters
+ignore_patterns:
+
+# How often to send a batch (in ms)
+batch_interval_ms: 2000
+
+# Maximum amount of messages in one batch
+max_batch_size: 50
+
+# Maximum length of one Discord message (Discord has a limit of 2000 characters)
+max_message_length: 1900
+
+# Include stack traces
+include_stack_traces: true
+
+# Remove mentions
+remove_mentions: true
+
+# Enable if you want to see debug stuff
+debug: false
+
+# Catches System.out and System.err
+capture_system_streams: true
+
