@@ -1,3 +1,6 @@
+##############################
+########## General ##########
+##############################
 
 # URL of discord webhook
 webhook_url: "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX"
@@ -29,8 +32,19 @@ send_gamemode_changes: false
 # Send server load messages
 send_server_load: true
 
+##############################
+########## Watchdog ##########
+##############################
 
 
+# Enable Watchdog
+watchdog_enabled: true
+
+# Ho long it takes to alert Watchdog (in ms)
+watchdog_timeout_ms: 10000
+
+# How often should Watchdog check (in ms)
+watchdog_check_interval_ms: 2000
 
 
 ##############################
@@ -38,7 +52,7 @@ send_server_load: true
 ##############################
 
 # Filters
-ignore_patterns:
+ignore_patterns: []
 
 # How often to send a batch (in ms)
 batch_interval_ms: 2000
