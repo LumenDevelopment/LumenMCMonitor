@@ -2,9 +2,6 @@
 ########## General ##########
 ##############################
 
-# URL of discord webhook
-webhook_url: "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX"
-
 # Minimal logs level (SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST)
 min_level: "SEVERE"
 
@@ -31,6 +28,9 @@ send_gamemode_changes: false
 
 # Send server load messages
 send_server_load: true
+
+# Embeds for start and stop
+embeds_start_stop_enabled: true
 
 ##############################
 ########## Watchdog ##########
