@@ -364,7 +364,7 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
             embed.description = description;
             embed.color = color;
             embed.timestamp = Instant.now().toString();
-            embed.footer = new Footer("LumenMC Monitor | " + LocalDateTime.now());
+            embed.footer = new Footer("LumenMC DCW " + getDescription().getVersion() + " | " + LocalDateTime.now());
             embed.image = new Image(WEBHOOK_IMAGE != null && !WEBHOOK_IMAGE.isBlank()
                     ? WEBHOOK_IMAGE
                     : "https://cdn.lumenvm.cloud/lumenmc-banner.png");
