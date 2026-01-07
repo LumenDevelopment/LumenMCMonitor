@@ -1,7 +1,7 @@
 name: 'LumenMC-DCWebhooks'
-version: '1.0'
+version: 'a1.1'
 main: cz.snvk.lumenmc.discordwebhooks.LumenMCDiscordWebhooks
-api-version: '1.21.11'
+api-version: '1.18'
 commands:
   lumenmc:
     description: Testing and relaoding LumenMC DCWebhooks plugin

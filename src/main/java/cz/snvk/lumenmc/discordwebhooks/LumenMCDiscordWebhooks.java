@@ -23,7 +23,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
@@ -56,6 +58,14 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
     private boolean sendGamemodeChanges;
     private boolean sendServerLoad;
 
+    // Embeds
+    private boolean embedsStartStopEnabled;
+    private String embedStartTitle = "\uD83D\uDFE6 Server start";
+    private String embedStartDescription = "✅ Startup complete.";
+    private int embedStartColor = 3447003;
+    private String embedStopTitle = "\uD83D\uDFE5 Server stop";
+    private String embedStopDescription = "\uD83D\uDED1 Server is shutting down.";
+    private int embedStopColor = 15158332;
 
     // Watchdog
     private volatile long lastTickNanos = System.nanoTime();
@@ -67,6 +77,18 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
     private String watchdogAlertMessage = "⚠️ Server stopped ticking.";
     private String watchdogRecoveryMessage = "✅ Server has recovered (ticking restored).";
     private volatile boolean watchdogAlerted = false;
+
+    // Pterodactyl variables
+    private static final String WEBHOOK_URL = System.getenv("WEBHOOK_URL");
+    private static final String WEBHOOK_AVATAR = System.getenv("WEBHOOK_AVATAR");
+    private static final String WEBHOOK_NAME = System.getenv("WEBHOOK_NAME");
+    private static final String WEBHOOK_IMAGE = System.getenv("WEBHOOK_IMAGE");
+    private static final String TZ = System.getenv("TZ");
+    private static final String SERVER_MEMORY = System.getenv("SERVER_MEMORY");
+    private static final String SERVER_IP = System.getenv("SERVER_IP");
+    private static final String SERVER_PORT = System.getenv("SERVER_PORT");
+    private static final String P_SERVER_LOCATION = System.getenv("P_SERVER_LOCATION");
+    private static final String P_SERVER_UUID = System.getenv("P_SERVER_UUID");
 
 
     // Queue
@@ -140,7 +162,7 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         if (webhookUri == null) {
-            getLogger().severe("Webhook URL is NOT set. Pleas set it in config.yml, dumbass :)");
+            getLogger().severe("Webhook URL is NOT set. Pleas adjust pterodactyl server configuration accordingly :)");
             return;
         }
 
@@ -195,6 +217,10 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        if (webhookUri != null && embedsStartStopEnabled) {
+            sendEmbed(embedStopTitle, embedStopDescription, embedStopColor);
+        }
+
         detachHandlers();
 
         if (taskId != -1) {
@@ -282,7 +308,7 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(PlayerDeathEvent event) {
         if (!sendDeaths) return;
-        String msg = event.getDeathMessage(); // např. "Vanueleu fell out of the world"
+        String msg = event.getDeathMessage();
         if (msg == null || msg.isBlank()) return;
         String content = "[" + Instant.now() + "] [DEATH] " + msg;
         enqueueIfAllowed(content);
@@ -300,10 +326,13 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onServerLoad(ServerLoadEvent event) {
         if (!sendServerLoad) return;
-        // Vanilla hláška "Done (...s)! For help, type "help"" si plugin sám nezná,
-        // ale dáme ekvivalentní oznámení.
-        String content = "[" + Instant.now() + "] [SERVER] Startup complete. For help, type \"help\"";
-        enqueueIfAllowed(content);
+        if (embedsStartStopEnabled) {
+            sendEmbed(embedStartTitle, embedStartDescription, embedStartColor);
+        }
+        else{
+            String content = "[" + Instant.now() + "] [SERVER] Startup complete. For help, type \"help\"";
+            enqueueIfAllowed(content);
+        }
     }
 
     private String prettyMode(GameMode mode) {
@@ -315,6 +344,8 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
         };
     }
 
+    // Send
+
     private void enqueueIfAllowed(String content) {
         if (removeMentions) {
             content = content.replace("@everyone", "＠everyone").replace("@here", "＠here");
@@ -323,6 +354,51 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
             for (String chunk : splitMessage(content, maxMessageLength)) {
                 queue.offer(chunk);
             }
+        }
+    }
+
+    private void sendEmbed(String title, String description, int color) {
+        try {
+            Embed embed = new Embed();
+            embed.title = title;
+            embed.description = description;
+            embed.color = color;
+            embed.timestamp = Instant.now().toString();
+            embed.footer = new Footer("LumenMC Monitor | " + LocalDateTime.now());
+            embed.image = new Image(WEBHOOK_IMAGE != null && !WEBHOOK_IMAGE.isBlank()
+                    ? WEBHOOK_IMAGE
+                    : "https://cdn.lumenvm.cloud/lumenmc-banner.png");
+
+            embed.fields = Arrays.asList(
+                    new Field("Time Zone", TZ, true),
+                    new Field("Server Memory", SERVER_MEMORY + "MB", true),
+                    new Field("Server IP", SERVER_IP, true),
+                    new Field("Server Port", SERVER_PORT, true),
+                    new Field("Server Location", P_SERVER_LOCATION, true),
+                    new Field("Server UUID", "```" + P_SERVER_UUID + "```", true),
+                    new Field("Server Version", getServer().getVersion(), true),
+                    new Field("Number of Plugins", String.valueOf(getServer().getPluginManager().getPlugins().length), true)
+            );
+
+            WebhookEmbedPayload payload = new WebhookEmbedPayload();
+            payload.username = WEBHOOK_NAME != null ? WEBHOOK_NAME : "LumenMC";
+            payload.avatar_url = WEBHOOK_AVATAR != null ? WEBHOOK_AVATAR : "https://cdn.lumenvm.cloud/lumen-avatar.png";
+            payload.embeds = Collections.singletonList(embed);
+
+            String json = gson.toJson(payload);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(webhookUri)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (debug) {
+                getLogger().info("Webhook embed sent: HTTP " + response.statusCode());
+            }
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error when sending embed to Discord: ", e);
         }
     }
 
@@ -359,8 +435,10 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
     // Config
 
     private void readConfig() {
-        String url = getConfig().getString("webhook_url", "");
-        if (url != null && !url.isBlank()) {
+        //String url = getConfig().getString("webhook_url", "");
+        String url = WEBHOOK_URL;
+
+        if (url != null && !url.isBlank() && !url.equals("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
             try { webhookUri = URI.create(url); }
             catch (IllegalArgumentException e) {
                 getLogger().severe("Webhook URL is invalid: " + url);
@@ -373,7 +451,7 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
         minLevel = parseLevel(getConfig().getString("min_level", "INFO"));
         ignorePatterns = getConfig().getStringList("ignore_patterns");
         includeStackTraces = getConfig().getBoolean("include_stack_traces", true);
-        batchIntervalMs = getConfig().getInt("batchbatch_interval_ms", 2000);
+        batchIntervalMs = getConfig().getInt("batch_interval_ms", 2000);
         maxBatchSize = getConfig().getInt("max_batch_size", 50);
         maxMessageLength = getConfig().getInt("max_message_length", 1900);
         removeMentions = getConfig().getBoolean("remove_mentions", true);
@@ -389,6 +467,7 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
         sendGamemodeChanges = getConfig().getBoolean("send_gamemode_changes", true);
         sendServerLoad = getConfig().getBoolean("send_server_load", true);
 
+        embedsStartStopEnabled = getConfig().getBoolean("embeds_start_stop_enabled", true);
 
         watchdogEnabled = getConfig().getBoolean("watchdog_enabled", true);
         watchdogTimeoutMs = getConfig().getLong("watchdog_timeout_ms", 10000L);
@@ -593,7 +672,7 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
 
     private void sendWebhook(String content) {
         try {
-            WebhookPayload payload = new WebhookPayload(content);
+            WebhookContentPayload payload = new WebhookContentPayload(content);
             String json = gson.toJson(payload);
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -618,11 +697,53 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
         }
     }
 
-    static class WebhookPayload {
-        @SerializedName("content")
-        String content;
-        WebhookPayload(String content) { this.content = content; }
+
+
+    // Content-only payload
+    static class WebhookContentPayload {
+        @SerializedName("content") String content;
+        WebhookContentPayload(String content) { this.content = content; }
     }
 
+    // Embed-only payload
+    static class WebhookEmbedPayload {
+        @SerializedName("username") String username;
+        @SerializedName("avatar_url") String avatar_url;
+        @SerializedName("embeds") List<Embed> embeds;
+    }
 
+    static class Image {
+        @SerializedName("url") String url;
+        Image(String url) { this.url = url; }
+    }
+
+    static class Embed {
+        @SerializedName("image")       Image image;
+        @SerializedName("title")       String title;
+        @SerializedName("description") String description;
+        @SerializedName("color")       Integer color;
+        @SerializedName("timestamp")   String timestamp;
+        @SerializedName("footer")      Footer footer;
+        @SerializedName("author")      Author author;
+        @SerializedName("fields")      List<Field> fields;
+    }
+
+    static class Footer {
+        @SerializedName("text") String text;
+        Footer(String text) { this.text = text; }
+    }
+
+    static class Author {
+        @SerializedName("name") String name;
+        Author(String name) { this.name = name; }
+    }
+
+    static class Field {
+        @SerializedName("name")   String name;
+        @SerializedName("value")  String value;
+        @SerializedName("inline") Boolean inline;
+        Field(String name, String value, boolean inline) {
+            this.name = name; this.value = value; this.inline = inline;
+        }
+    }
 }
