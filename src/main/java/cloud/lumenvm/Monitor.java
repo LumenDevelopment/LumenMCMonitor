@@ -1,4 +1,4 @@
-package cz.snvk.lumenmc.discordwebhooks;
+package cloud.lumenvm;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
@@ -18,6 +18,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -33,7 +34,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
+public class Monitor extends JavaPlugin implements Listener {
 
 
     // Config
@@ -80,15 +81,11 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
 
     // Pterodactyl variables
     private static final String WEBHOOK_URL = System.getenv("WEBHOOK_URL");
-    private static final String WEBHOOK_AVATAR = System.getenv("WEBHOOK_AVATAR");
-    private static final String WEBHOOK_NAME = System.getenv("WEBHOOK_NAME");
-    private static final String WEBHOOK_IMAGE = System.getenv("WEBHOOK_IMAGE");
+    private static String P_SERVER_LOCATION = System.getenv("P_SERVER_LOCATION");
+    private static final String P_SERVER_UUID = System.getenv("P_SERVER_UUID");
     private static final String TZ = System.getenv("TZ");
-    private static final String SERVER_MEMORY = System.getenv("SERVER_MEMORY");
     private static final String SERVER_IP = System.getenv("SERVER_IP");
     private static final String SERVER_PORT = System.getenv("SERVER_PORT");
-    private static final String P_SERVER_LOCATION = System.getenv("P_SERVER_LOCATION");
-    private static final String P_SERVER_UUID = System.getenv("P_SERVER_UUID");
 
 
     // Queue
@@ -162,7 +159,7 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         if (webhookUri == null) {
-            getLogger().severe("Webhook URL is NOT set. Pleas adjust pterodactyl server configuration accordingly :)");
+            getLogger().severe("Webhook URL is NOT set. Pleas adjust pterodactyl server configuration/config.yml accordingly :)");
             return;
         }
 
@@ -364,28 +361,39 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
             embed.description = description;
             embed.color = color;
             embed.timestamp = Instant.now().toString();
-            embed.footer = new Footer("LumenMC Monitor | " + LocalDateTime.now());
-            embed.image = new Image(WEBHOOK_IMAGE != null && !WEBHOOK_IMAGE.isBlank()
-                    ? WEBHOOK_IMAGE
-                    : "https://cdn.lumenvm.cloud/lumenmc-banner.png");
+            embed.footer = new Footer("LumenMC Monitor " + getDescription().getVersion() + " | " + LocalDateTime.now());
+            embed.image = new Image("https://cdn.lumenvm.cloud/lumenmc-banner.png");
 
-            embed.fields = Arrays.asList(
-                    new Field("Time Zone", TZ, true),
-                    new Field("Server Memory", SERVER_MEMORY + "MB", true),
-                    new Field("Server IP", SERVER_IP, true),
-                    new Field("Server Port", SERVER_PORT, true),
-                    new Field("Server Location", P_SERVER_LOCATION, true),
-                    new Field("Server UUID", "```" + P_SERVER_UUID + "```", true),
-                    new Field("Server Version", getServer().getVersion(), true),
-                    new Field("Number of Plugins", String.valueOf(getServer().getPluginManager().getPlugins().length), true)
-            );
+            if (P_SERVER_LOCATION != null && !P_SERVER_LOCATION.isBlank() && P_SERVER_UUID != null && !P_SERVER_UUID.isBlank()) {
+                embed.fields = Arrays.asList(
+                        new Field("Time Zone", TZ, true),
+                        new Field("Server Memory", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
+                        new Field("Server IP", SERVER_IP, true),
+                        new Field("Server Port", SERVER_PORT, true),
+                        new Field("Server Location", P_SERVER_LOCATION, true),
+                        new Field("Server UUID", "```" + P_SERVER_UUID + "```", true),
+                        new Field("Server Version", getServer().getVersion(), true),
+                        new Field("Number of Plugins", String.valueOf(getServer().getPluginManager().getPlugins().length), true)
+                );
+            } else {
+                embed.fields = Arrays.asList(
+                        new Field("Time Zone", TimeZone.getDefault().getID(), true),
+                        new Field("Server Memory", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
+                        new Field("Server Version", getServer().getVersion(), true),
+                        new Field("Number of Plugins", String.valueOf(getServer().getPluginManager().getPlugins().length), true)
+                );
+            }
 
             WebhookEmbedPayload payload = new WebhookEmbedPayload();
-            payload.username = WEBHOOK_NAME != null ? WEBHOOK_NAME : "LumenMC";
-            payload.avatar_url = WEBHOOK_AVATAR != null ? WEBHOOK_AVATAR : "https://cdn.lumenvm.cloud/lumen-avatar.png";
+            payload.username = "LumenMC";
+            payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
             payload.embeds = Collections.singletonList(embed);
 
             String json = gson.toJson(payload);
+
+            if (debug) {
+                getLogger().info("Sending embed to Discord \n" + json);
+            }
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(webhookUri)
@@ -396,6 +404,7 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (debug) {
                 getLogger().info("Webhook embed sent: HTTP " + response.statusCode());
+                getLogger().info("Response body: " + response.body());
             }
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "Error when sending embed to Discord: ", e);
@@ -435,14 +444,22 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
     // Config
 
     private void readConfig() {
-        //String url = getConfig().getString("webhook_url", "");
         String url = WEBHOOK_URL;
 
         if (url != null && !url.isBlank() && !url.equals("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
-            try { webhookUri = URI.create(url); }
+            try { webhookUri = URI.create(url); getLogger().info("Discord Webhook url set to: +" + webhookUri); }
             catch (IllegalArgumentException e) {
                 getLogger().severe("Webhook URL is invalid: " + url);
                 webhookUri = null;
+            }
+        } else if (url == null || url.isBlank()) {
+            url = getConfig().getString("webhook_url", "");
+            if (!url.equals("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
+                try { webhookUri = URI.create(url); getLogger().info("Discord Webhook url set to: +" + webhookUri); }
+                catch (IllegalArgumentException e) {
+                    getLogger().severe("Webhook URL is invalid: " + url);
+                    webhookUri = null;
+                }
             }
         } else {
             webhookUri = null;
@@ -674,6 +691,8 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
         try {
             WebhookContentPayload payload = new WebhookContentPayload(content);
             String json = gson.toJson(payload);
+            payload.username = "LumenMC";
+            payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(webhookUri)
@@ -702,6 +721,8 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
     // Content-only payload
     static class WebhookContentPayload {
         @SerializedName("content") String content;
+        @SerializedName("username") String username;
+        @SerializedName("avatar_url") String avatar_url;
         WebhookContentPayload(String content) { this.content = content; }
     }
 
@@ -724,7 +745,6 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
         @SerializedName("color")       Integer color;
         @SerializedName("timestamp")   String timestamp;
         @SerializedName("footer")      Footer footer;
-        @SerializedName("author")      Author author;
         @SerializedName("fields")      List<Field> fields;
     }
 
