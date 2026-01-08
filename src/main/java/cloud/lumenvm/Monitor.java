@@ -691,6 +691,8 @@ public class Monitor extends JavaPlugin implements Listener {
         try {
             WebhookContentPayload payload = new WebhookContentPayload(content);
             String json = gson.toJson(payload);
+            payload.username = "LumenMC";
+            payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(webhookUri)
@@ -719,6 +721,8 @@ public class Monitor extends JavaPlugin implements Listener {
     // Content-only payload
     static class WebhookContentPayload {
         @SerializedName("content") String content;
+        @SerializedName("username") String username;
+        @SerializedName("avatar_url") String avatar_url;
         WebhookContentPayload(String content) { this.content = content; }
     }
 
@@ -741,7 +745,6 @@ public class Monitor extends JavaPlugin implements Listener {
         @SerializedName("color")       Integer color;
         @SerializedName("timestamp")   String timestamp;
         @SerializedName("footer")      Footer footer;
-        @SerializedName("author")      Author author;
         @SerializedName("fields")      List<Field> fields;
     }
 
