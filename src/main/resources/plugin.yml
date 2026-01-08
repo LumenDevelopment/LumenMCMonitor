@@ -1,6 +1,6 @@
-name: 'LumenMC-DCWebhooks'
+name: 'LumenMCMonitor'
 version: 'a1.1'
-main: cz.snvk.lumenmc.discordwebhooks.LumenMCDiscordWebhooks
+main: cloud.lumenvm.Monitor
 api-version: '1.18'
 commands:
   lumenmc:

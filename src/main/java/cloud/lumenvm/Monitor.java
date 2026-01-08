@@ -1,4 +1,4 @@
-package cz.snvk.lumenmc.discordwebhooks;
+package cloud.lumenvm;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
@@ -33,7 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
+public class Monitor extends JavaPlugin implements Listener {
 
 
     // Config
@@ -364,7 +364,7 @@ public class LumenMCDiscordWebhooks extends JavaPlugin implements Listener {
             embed.description = description;
             embed.color = color;
             embed.timestamp = Instant.now().toString();
-            embed.footer = new Footer("LumenMC DCW " + getDescription().getVersion() + " | " + LocalDateTime.now());
+            embed.footer = new Footer("LumenMC Monitor " + getDescription().getVersion() + " | " + LocalDateTime.now());
             embed.image = new Image(WEBHOOK_IMAGE != null && !WEBHOOK_IMAGE.isBlank()
                     ? WEBHOOK_IMAGE
                     : "https://cdn.lumenvm.cloud/lumenmc-banner.png");
