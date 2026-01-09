@@ -29,10 +29,10 @@ send_deaths: true
 # Send gamemode changes
 send_gamemode_changes: false
 
-# Send server load messages
-send_server_load: true
+# Send server start/stop messages
+send_server_start_stop: true
 
-# Embeds for start and stop
+# Embeds for start and stop messages
 embeds_start_stop_enabled: true
 
 ##############################

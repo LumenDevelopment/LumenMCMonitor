@@ -14,6 +14,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -34,6 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+@SuppressWarnings("FieldCanBeLocal")
 public class Monitor extends JavaPlugin implements Listener {
 
 
@@ -61,12 +63,12 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Embeds
     private boolean embedsStartStopEnabled;
-    private String embedStartTitle = "\uD83D\uDFE6 Server start";
-    private String embedStartDescription = "✅ Startup complete.";
-    private int embedStartColor = 3447003;
-    private String embedStopTitle = "\uD83D\uDFE5 Server stop";
-    private String embedStopDescription = "\uD83D\uDED1 Server is shutting down.";
-    private int embedStopColor = 15158332;
+    private final String embedStartTitle = "\uD83D\uDFE6 Server start";
+    private final String embedStartDescription = "✅ Startup complete.";
+    private final int embedStartColor = 3447003;
+    private final String embedStopTitle = "\uD83D\uDFE5 Server stop";
+    private final String embedStopDescription = "\uD83D\uDED1 Server is shutting down.";
+    private final int embedStopColor = 15158332;
 
     // Watchdog
     private volatile long lastTickNanos = System.nanoTime();
@@ -75,13 +77,13 @@ public class Monitor extends JavaPlugin implements Listener {
     private boolean watchdogEnabled;
     private long watchdogTimeoutMs;
     private long watchdogCheckIntervalMs;
-    private String watchdogAlertMessage = "⚠️ Server stopped ticking.";
-    private String watchdogRecoveryMessage = "✅ Server has recovered (ticking restored).";
+    private final String watchdogAlertMessage = "⚠️ Server stopped ticking.";
+    private final String watchdogRecoveryMessage = "✅ Server has recovered (ticking restored).";
     private volatile boolean watchdogAlerted = false;
 
     // Pterodactyl variables
     private static final String WEBHOOK_URL = System.getenv("WEBHOOK_URL");
-    private static String P_SERVER_LOCATION = System.getenv("P_SERVER_LOCATION");
+    private static final String P_SERVER_LOCATION = System.getenv("P_SERVER_LOCATION");
     private static final String P_SERVER_UUID = System.getenv("P_SERVER_UUID");
     private static final String TZ = System.getenv("TZ");
     private static final String SERVER_IP = System.getenv("SERVER_IP");
@@ -98,7 +100,7 @@ public class Monitor extends JavaPlugin implements Listener {
     private Handler commonHandler;
     private boolean handlersAttached = false;
 
-    // ---- De-dupe a anti-double-drain ----
+    // Anti double drain
     private final Deque<Integer> recentHashes = new ArrayDeque<>();
     private static final int DEDUPE_WINDOW = 256;
     private final AtomicBoolean drainLock = new AtomicBoolean(false);
@@ -153,7 +155,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
         attachHandlers();
 
-        if (debug) getLogger().info("LumenMC: Handlers connected in onLoad(); queueing logs");
+        if (debug) getLogger().info("Debug: Handlers connected in onLoad(); queueing logs");
     }
 
     @Override
@@ -176,14 +178,12 @@ public class Monitor extends JavaPlugin implements Listener {
 
         if (captureSystemStreams) attachSystemStreamsTEE();
 
-        if (debug) getLogger().info("LumenMC: sending activated (interval " + batchIntervalMs + " ms / " + ticks + " ticks).");
+        if (debug) getLogger().info("Debug: Sending activated (interval " + batchIntervalMs + " ms / " + ticks + " ticks).");
 
 
         if (watchdogEnabled) {
             // Heartbeat
-            watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(this, () -> {
-                lastTickNanos = System.nanoTime();
-            }, 0L, 1L).getTaskId(); // 1 tick = 50 ms
+            watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(this, () -> lastTickNanos = System.nanoTime(), 0L, 1L).getTaskId(); // 1 tick = 50 ms
 
             // Async control
             int checkTicks = msToTicks((int) watchdogCheckIntervalMs);
@@ -228,7 +228,7 @@ public class Monitor extends JavaPlugin implements Listener {
         detachSystemStreamsTEE();
         drainAndSend();
 
-        if (debug) getLogger().info("LumenMC: off.");
+        if (debug) getLogger().info("Debug: off.");
 
         if (watchdogHeartbeatTaskId != -1) {
             Bukkit.getScheduler().cancelTask(watchdogHeartbeatTaskId);
@@ -414,7 +414,7 @@ public class Monitor extends JavaPlugin implements Listener {
     // Plugin command
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NonNull CommandSender sender, Command command, @NonNull String label, String @NonNull [] args) {
         if (!command.getName().equalsIgnoreCase("lumenmc")) return false;
 
         if (args.length == 0 || args[0].equalsIgnoreCase("test")) {
@@ -444,25 +444,39 @@ public class Monitor extends JavaPlugin implements Listener {
     // Config
 
     private void readConfig() {
+        debug = getConfig().getBoolean("debug", false);
+
+
         String url = WEBHOOK_URL;
 
-        if (url != null && !url.isBlank() && !url.equals("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
-            try { webhookUri = URI.create(url); getLogger().info("Discord Webhook url set to: +" + webhookUri); }
-            catch (IllegalArgumentException e) {
+        if (url != null && !url.isBlank() && !url.equals(getConfig().getString("webhook_url", "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX"))) {
+            try {
+                webhookUri = URI.create(url);
+                getConfig().set("webhook_url", url);
+                saveConfig();
+                if (debug) {
+                    getLogger().info("Discord Webhook url is set to: +" + webhookUri);
+                    getLogger().info("Discord Webhook url saved to config.yml");
+                }
+            } catch (IllegalArgumentException e) {
                 getLogger().severe("Webhook URL is invalid: " + url);
                 webhookUri = null;
             }
-        } else if (url == null || url.isBlank()) {
-            url = getConfig().getString("webhook_url", "");
+        } else {
+            url = getConfig().getString("webhook_url", "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX");
             if (!url.equals("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
-                try { webhookUri = URI.create(url); getLogger().info("Discord Webhook url set to: +" + webhookUri); }
-                catch (IllegalArgumentException e) {
+                try {
+                    webhookUri = URI.create(url);
+                    if (debug) {
+                        getLogger().info("Discord Webhook is url set to: +" + webhookUri);
+                    }
+                } catch (IllegalArgumentException e) {
                     getLogger().severe("Webhook URL is invalid: " + url);
                     webhookUri = null;
                 }
+            } else {
+                webhookUri = null;
             }
-        } else {
-            webhookUri = null;
         }
 
         minLevel = parseLevel(getConfig().getString("min_level", "INFO"));
@@ -472,7 +486,6 @@ public class Monitor extends JavaPlugin implements Listener {
         maxBatchSize = getConfig().getInt("max_batch_size", 50);
         maxMessageLength = getConfig().getInt("max_message_length", 1900);
         removeMentions = getConfig().getBoolean("remove_mentions", true);
-        debug = getConfig().getBoolean("debug", false);
         captureSystemStreams = getConfig().getBoolean("capture_system_streams", true);
 
         sendChat = getConfig().getBoolean("send_chat", true);
@@ -523,7 +536,7 @@ public class Monitor extends JavaPlugin implements Listener {
         attachNamedLoggers();
 
         handlersAttached = true;
-        if (debug) getLogger().info("LumenMC: Handlers connected (root/Bukkit level = ALL).");
+        if (debug) getLogger().info("Debug: Handlers connected (root/Bukkit level = ALL).");
     }
 
     private void attachNamedLoggers() {
@@ -537,9 +550,9 @@ public class Monitor extends JavaPlugin implements Listener {
                 for (Handler h : l.getHandlers()) {
                     try { h.setLevel(Level.ALL); } catch (Exception ignored) {}
                 }
-                if (debug) getLogger().info("LumenMC: Handler connected to logger  '" + name + "'");
+                if (debug) getLogger().info("Debug: Handler connected to logger  '" + name + "'");
             } catch (Exception e) {
-                if (debug) getLogger().warning("LumenMC: Couldn't connect to logger  '" + name + "': " + e.getMessage());
+                if (debug) getLogger().warning("Debug: Couldn't connect to logger  '" + name + "': " + e.getMessage());
             }
         }
     }
@@ -569,7 +582,7 @@ public class Monitor extends JavaPlugin implements Listener {
                 super.println(x);
             }
         });
-        if (debug) getLogger().info("LumenMC: System streams on.");
+        if (debug) getLogger().info("Debug: System streams on.");
     }
 
     private void detachSystemStreamsTEE() {
@@ -675,7 +688,7 @@ public class Monitor extends JavaPlugin implements Listener {
             String combined = String.join("\n", batch);
             List<String> payloads = splitMessage(combined, maxMessageLength);
 
-            if (debug) getLogger().info("LumenMC: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
+            if (debug) getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
 
             for (String content : payloads) {
                 sendWebhook(content);
@@ -704,7 +717,7 @@ public class Monitor extends JavaPlugin implements Listener {
             int status = response.statusCode();
 
             if (debug) {
-                getLogger().info("LumenMC: Webhook HTTP " + status +
+                getLogger().info("Debug: Webhook HTTP " + status +
                         (response.body() != null ? (" body: " + response.body()) : ""));
             }
 
@@ -751,11 +764,6 @@ public class Monitor extends JavaPlugin implements Listener {
     static class Footer {
         @SerializedName("text") String text;
         Footer(String text) { this.text = text; }
-    }
-
-    static class Author {
-        @SerializedName("name") String name;
-        Author(String name) { this.name = name; }
     }
 
     static class Field {
