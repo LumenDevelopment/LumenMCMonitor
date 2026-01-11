@@ -605,6 +605,21 @@ public class Monitor extends JavaPlugin implements Listener {
             return true;
         }
 
+        if (args[0].equalsIgnoreCase("setwebhook")) {
+            if (args.length == 1) {
+                sender.sendMessage("Use: /lumenmc setwebhook [webhook url]");
+                return true;
+            }
+
+            getConfig().set("webhook_url", args[1]);
+            saveConfig();
+            reloadConfig();
+            readConfig();
+
+            sender.sendMessage("Set webhook url to: " + args[1]);
+            return true;
+        }
+
         return false;
     }
 
@@ -615,6 +630,7 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("test");
             list.add("reload");
             list.add("lang");
+            list.add("setwebhook");
             list.sort(null);
             return list;
         }
