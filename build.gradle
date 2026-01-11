@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'cloud.lumenvm'
-version = 'a1.2'
+version = 'a1.3'
 
 repositories {
     mavenCentral()
@@ -16,6 +16,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     compileOnly 'org.spigotmc:spigot-api:1.18-R0.1-SNAPSHOT'
+    implementation 'commons-io:commons-io:2.21.0'
 }
 
 test {

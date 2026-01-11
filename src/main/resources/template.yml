@@ -1,0 +1,11 @@
+# This is a template for language files
+embed_start_title: "🟦 Server start"
+embed_start_description: "✅ Startup complete."
+embed_start_color: 3447003
+
+embed_stop_title: "🟥 Server stop"
+embed_stop_description: "🛑 Server is shutting down."
+embed_stop_color: 15158332
+
+watchdog_alert_message: "⚠️ Server stopped ticking."
+watchdog_recovery_message: "✅ Server has recovered (ticking restored)."
