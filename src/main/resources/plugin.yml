@@ -2,10 +2,14 @@ name: 'LumenMCMonitor'
 version: 'a1.2'
 main: cloud.lumenvm.Monitor
 api-version: '1.18'
+load: STARTUP
+authors: ["Lumen Development", "SNVK"]
+website: https://lumenvm.cloud/
+
 commands:
   lumenmc:
-    description: Testing and reloading LumenMC DCWebhooks plugin
-    usage: /lumenmc test|reload
+    description: Commands for LumenMC Monitor
+    usage: /lumenmc test|lang|reload (For full usage visit plugin website)
     permission: lumenmc.admin
 permissions:
   lumenmc.admin:

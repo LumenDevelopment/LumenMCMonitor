@@ -37,7 +37,9 @@ import java.util.logging.Logger;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class Monitor extends JavaPlugin implements Listener {
-
+    // Localization
+    private LanguageLoader langLoader;
+    private static String locale;
 
     // Config
     private HttpClient httpClient;
@@ -49,7 +51,7 @@ public class Monitor extends JavaPlugin implements Listener {
     private int maxBatchSize;
     private int maxMessageLength;
     private boolean removeMentions;
-    private boolean debug;
+    public static boolean debug;
     private boolean captureSystemStreams;
 
     private boolean sendChat;
@@ -63,12 +65,6 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Embeds
     private boolean embedsStartStopEnabled;
-    private final String embedStartTitle = "\uD83D\uDFE6 Server start";
-    private final String embedStartDescription = "✅ Startup complete.";
-    private final int embedStartColor = 3447003;
-    private final String embedStopTitle = "\uD83D\uDFE5 Server stop";
-    private final String embedStopDescription = "\uD83D\uDED1 Server is shutting down.";
-    private final int embedStopColor = 15158332;
 
     // Watchdog
     private volatile long lastTickNanos = System.nanoTime();
@@ -77,8 +73,6 @@ public class Monitor extends JavaPlugin implements Listener {
     private boolean watchdogEnabled;
     private long watchdogTimeoutMs;
     private long watchdogCheckIntervalMs;
-    private final String watchdogAlertMessage = "⚠️ Server stopped ticking.";
-    private final String watchdogRecoveryMessage = "✅ Server has recovered (ticking restored).";
     private volatile boolean watchdogAlerted = false;
 
     // Pterodactyl variables
@@ -160,6 +154,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+
         if (webhookUri == null) {
             getLogger().severe("Webhook URL is NOT set. Pleas adjust pterodactyl server configuration/config.yml accordingly :)");
             return;
@@ -183,7 +178,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
         if (watchdogEnabled) {
             // Heartbeat
-            watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(this, () -> lastTickNanos = System.nanoTime(), 0L, 1L).getTaskId(); // 1 tick = 50 ms
+            watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(this, () -> lastTickNanos = System.nanoTime(), 0L, 1L).getTaskId();
 
             // Async control
             int checkTicks = msToTicks((int) watchdogCheckIntervalMs);
@@ -194,20 +189,20 @@ public class Monitor extends JavaPlugin implements Listener {
                 if (elapsedMs >= watchdogTimeoutMs) {
                     if (!watchdogAlerted) {
                         watchdogAlerted = true;
-                        enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + watchdogAlertMessage);
+                        enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + langLoader.get("watchdog_alert_message"));
                         if (debug) getLogger().warning("WATCHDOG alert: main thread stalled for " + elapsedMs + " ms");
                     }
                 } else {
                     // Restored
                     if (watchdogAlerted) {
                         watchdogAlerted = false;
-                        enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + watchdogRecoveryMessage);
+                        enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + langLoader.get("watchdog_recovery_message"));
                         if (debug) getLogger().info("WATCHDOG recovery: main thread delay " + elapsedMs + " ms");
                     }
                 }
             }, checkTicks, checkTicks).getTaskId();
 
-            if (debug) getLogger().info("Watchdog launched (timeout " + watchdogTimeoutMs + " ms, control every " + watchdogCheckIntervalMs + " ms).");
+            if (debug) getLogger().info("Debug: Watchdog launched (timeout " + watchdogTimeoutMs + " ms, control every " + watchdogCheckIntervalMs + " ms).");
         }
 
     }
@@ -215,7 +210,7 @@ public class Monitor extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         if (webhookUri != null && embedsStartStopEnabled) {
-            sendEmbed(embedStopTitle, embedStopDescription, embedStopColor);
+            sendEmbed(langLoader.get("embed_stop_title"), langLoader.get("embed_stop_description"), Integer.parseInt(langLoader.get("embed_stop_color")));
         }
 
         detachHandlers();
@@ -227,8 +222,6 @@ public class Monitor extends JavaPlugin implements Listener {
 
         detachSystemStreamsTEE();
         drainAndSend();
-
-        if (debug) getLogger().info("Debug: off.");
 
         if (watchdogHeartbeatTaskId != -1) {
             Bukkit.getScheduler().cancelTask(watchdogHeartbeatTaskId);
@@ -276,7 +269,7 @@ public class Monitor extends JavaPlugin implements Listener {
         if (!sendUuidPrelogin) return;
         String name = event.getName();
         UUID uuid = event.getUniqueId();
-        String content = "[" + Instant.now() + "] [LOGIN] UUID of player " + name + " is " + uuid;
+        String content = "[" + Instant.now() + "] [LOGIN] UUID of player " + name + ": " + uuid;
         enqueueIfAllowed(content);
     }
 
@@ -324,7 +317,7 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onServerLoad(ServerLoadEvent event) {
         if (!sendServerLoad) return;
         if (embedsStartStopEnabled) {
-            sendEmbed(embedStartTitle, embedStartDescription, embedStartColor);
+            sendEmbed(langLoader.get("embed_start_title"), langLoader.get("embed_start_description"), Integer.parseInt(langLoader.get("embed_start_color")));
         }
         else{
             String content = "[" + Instant.now() + "] [SERVER] Startup complete. For help, type \"help\"";
@@ -351,6 +344,66 @@ public class Monitor extends JavaPlugin implements Listener {
             for (String chunk : splitMessage(content, maxMessageLength)) {
                 queue.offer(chunk);
             }
+        }
+    }
+
+    private void drainAndSend() {
+        if (webhookUri == null) return;
+
+        // Anti-double-drain lock
+        if (!drainLock.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            List<String> batch = new ArrayList<>(maxBatchSize);
+            while (batch.size() < maxBatchSize) {
+                String item = queue.poll();
+                if (item == null) break;
+                batch.add(item);
+            }
+            if (batch.isEmpty()) return;
+
+            String combined = String.join("\n", batch);
+            List<String> payloads = splitMessage(combined, maxMessageLength);
+
+            if (debug) getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
+
+            for (String content : payloads) {
+                sendContent(content);
+                try { Thread.sleep(250); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+            }
+        } finally {
+            drainLock.set(false);
+        }
+    }
+
+    private void sendContent(String content) {
+        try {
+            WebhookContentPayload payload = new WebhookContentPayload(content);
+            String json = gson.toJson(payload);
+            payload.username = "LumenMC";
+            payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(webhookUri)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            int status = response.statusCode();
+
+            if (debug) {
+                getLogger().info("Debug: Webhook HTTP " + status +
+                        (response.body() != null ? (" body: " + response.body()) : ""));
+            }
+
+            if (status < 200 || status >= 300) {
+                getLogger().warning("Discord webhook returned HTTP " + status + ": " + response.body());
+            }
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error when sending to webhook", e);
         }
     }
 
@@ -392,7 +445,7 @@ public class Monitor extends JavaPlugin implements Listener {
             String json = gson.toJson(payload);
 
             if (debug) {
-                getLogger().info("Sending embed to Discord \n" + json);
+                getLogger().info("Debug: Sending embed to Discord \n" + json);
             }
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -403,8 +456,8 @@ public class Monitor extends JavaPlugin implements Listener {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (debug) {
-                getLogger().info("Webhook embed sent: HTTP " + response.statusCode());
-                getLogger().info("Response body: " + response.body());
+                getLogger().info("Debug: Webhook embed sent: HTTP " + response.statusCode());
+                getLogger().info("Debug: Response body: " + response.body());
             }
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "Error when sending embed to Discord: ", e);
@@ -417,7 +470,12 @@ public class Monitor extends JavaPlugin implements Listener {
     public boolean onCommand(@NonNull CommandSender sender, Command command, @NonNull String label, String @NonNull [] args) {
         if (!command.getName().equalsIgnoreCase("lumenmc")) return false;
 
-        if (args.length == 0 || args[0].equalsIgnoreCase("test")) {
+        if (args.length == 0) {
+            sender.sendMessage("Use: /lumenmc test|lang|reload");
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("test")) {
             if (webhookUri == null) {
                 sender.sendMessage("§cWebhook URL is NOT set. Pleas set it in config.yml, dumbass :)");
                 return true;
@@ -437,16 +495,91 @@ public class Monitor extends JavaPlugin implements Listener {
             return true;
         }
 
-        sender.sendMessage("Use: /lumenmc test|reload");
+        if (args[0].equalsIgnoreCase("lang")) {
+            if (args.length == 1) {
+                sender.sendMessage("Use: /lumenmc lang create|remove|set|list");
+                return true;
+            }
+
+            if (args[1].equalsIgnoreCase("create")) {
+                if (args.length == 2) {
+                    sender.sendMessage("Use: /lumenmc lang create [language]");
+                    return true;
+                }
+
+                String langName = args[2];
+                if (langName == null || langName.isBlank()) {
+                    sender.sendMessage("Use: /lumenmc lang create [language]");
+                    return true;
+                }
+                if (args.length > 3) {
+                    sender.sendMessage("Don't enter spaces, please. Use: /lumenmc lang create [language]");
+                    return true;
+                }
+                if (langName.contains(".yml")) langName = langName.replace(".yml", "");
+                sender.sendMessage(langLoader.createLang(this, langName));
+                return true;
+            }
+
+            if (args[1].equalsIgnoreCase("remove")) {
+                if (args.length == 2) {
+                    sender.sendMessage("Use: /lumenmc lang remove [language]");
+                    return true;
+                }
+
+                String langName = args[2];
+                if (langName == null || langName.isBlank()) {
+                    sender.sendMessage("Use: /lumenmc lang remove [language]");
+                    return true;
+                }
+                if (args.length > 3) {
+                    sender.sendMessage("Don't enter spaces, please. Use: /lumenmc lang remove [language]");
+                    return true;
+                }
+                if (langName.contains(".yml")) langName = langName.replace(".yml", "");
+                sender.sendMessage(langLoader.removeLang(this, langName));
+                return true;
+            }
+
+            if (args[1].equalsIgnoreCase("set")) {
+                if (args.length == 2) {
+                    sender.sendMessage("Use: /lumenmc lang set [language]");
+                    return true;
+                }
+
+                String langName = args[2];
+                if (langName == null || langName.isBlank()) {
+                    sender.sendMessage("Use: /lumenmc lang set [language]");
+                    return true;
+                }
+                if (args.length > 3) {
+                    sender.sendMessage("Don't enter spaces, please. Use: /lumenmc lang set [language]");
+                    return true;
+                }
+                if (langName.contains(".yml")) langName = langName.replace(".yml", "");
+                sender.sendMessage(langLoader.setLang(this, langName));
+                return true;
+            }
+
+            if (args[1].equalsIgnoreCase("list")) {
+                sender.sendMessage(langLoader.listLang(this));
+                return true;
+            }
+
+            sender.sendMessage("Use: /lumenmc lang create|remove|set|list");
+            return true;
+        }
+
+        sender.sendMessage("Use: /lumenmc test|lang|reload|");
         return true;
+
     }
 
     // Config
 
-    private void readConfig() {
+    void readConfig() {
         debug = getConfig().getBoolean("debug", false);
-
-
+        langLoader = new LanguageLoader(this);
         String url = WEBHOOK_URL;
 
         if (url != null && !url.isBlank() && !url.equals(getConfig().getString("webhook_url", "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX"))) {
@@ -455,8 +588,8 @@ public class Monitor extends JavaPlugin implements Listener {
                 getConfig().set("webhook_url", url);
                 saveConfig();
                 if (debug) {
-                    getLogger().info("Discord Webhook url is set to: +" + webhookUri);
-                    getLogger().info("Discord Webhook url saved to config.yml");
+                    getLogger().info("Debug: Discord Webhook url is set to: +" + webhookUri);
+                    getLogger().info("Debug: Discord Webhook url saved to config.yml");
                 }
             } catch (IllegalArgumentException e) {
                 getLogger().severe("Webhook URL is invalid: " + url);
@@ -468,10 +601,10 @@ public class Monitor extends JavaPlugin implements Listener {
                 try {
                     webhookUri = URI.create(url);
                     if (debug) {
-                        getLogger().info("Discord Webhook is url set to: +" + webhookUri);
+                        getLogger().info("Debug: Discord Webhook is url set to: +" + webhookUri);
                     }
                 } catch (IllegalArgumentException e) {
-                    getLogger().severe("Webhook URL is invalid: " + url);
+                    getLogger().severe("Debug: Webhook URL is invalid: " + url);
                     webhookUri = null;
                 }
             } else {
@@ -487,6 +620,7 @@ public class Monitor extends JavaPlugin implements Listener {
         maxMessageLength = getConfig().getInt("max_message_length", 1900);
         removeMentions = getConfig().getBoolean("remove_mentions", true);
         captureSystemStreams = getConfig().getBoolean("capture_system_streams", true);
+        locale = getConfig().getString("locale", "en_US");
 
         sendChat = getConfig().getBoolean("send_chat", true);
         sendPlayerCommands = getConfig().getBoolean("send_player_commands", true);
@@ -669,67 +803,9 @@ public class Monitor extends JavaPlugin implements Listener {
         return parts;
     }
 
-    private void drainAndSend() {
-        if (webhookUri == null) return;
-
-        // Anti-double-drain lock
-        if (!drainLock.compareAndSet(false, true)) {
-            return;
-        }
-        try {
-            List<String> batch = new ArrayList<>(maxBatchSize);
-            while (batch.size() < maxBatchSize) {
-                String item = queue.poll();
-                if (item == null) break;
-                batch.add(item);
-            }
-            if (batch.isEmpty()) return;
-
-            String combined = String.join("\n", batch);
-            List<String> payloads = splitMessage(combined, maxMessageLength);
-
-            if (debug) getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
-
-            for (String content : payloads) {
-                sendWebhook(content);
-                try { Thread.sleep(250); }
-                catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
-            }
-        } finally {
-            drainLock.set(false);
-        }
+    public static String getLocale() {
+        return locale;
     }
-
-    private void sendWebhook(String content) {
-        try {
-            WebhookContentPayload payload = new WebhookContentPayload(content);
-            String json = gson.toJson(payload);
-            payload.username = "LumenMC";
-            payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(webhookUri)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            int status = response.statusCode();
-
-            if (debug) {
-                getLogger().info("Debug: Webhook HTTP " + status +
-                        (response.body() != null ? (" body: " + response.body()) : ""));
-            }
-
-            if (status < 200 || status >= 300) {
-                getLogger().warning("Discord webhook returned HTTP " + status + ": " + response.body());
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error when sending to webhook", e);
-        }
-    }
-
-
 
     // Content-only payload
     static class WebhookContentPayload {
