@@ -8,22 +8,26 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
+import java.util.*;
 
 public class LanguageLoader {
 
     HashMap<String, String> translationMap = new HashMap<>();
+    File languageDirectory;
+    File defaultLanguageFile;
+    File customLanguageFile;
+    FileConfiguration defaultTranslations;
 
 
     public LanguageLoader(Monitor plugin){
-        File languageDirectory = new File(plugin.getDataFolder(), "languages/");
-        File defaultLanguageFile = new File(plugin.getDataFolder(), "languages/en_US.yml");
-        FileConfiguration defaultTranslation = YamlConfiguration.loadConfiguration(defaultLanguageFile);
+        languageDirectory = new File(plugin.getDataFolder(), "languages/");
+        defaultLanguageFile = new File(plugin.getDataFolder(), "languages/en_US.yml");
+        defaultTranslations = YamlConfiguration.loadConfiguration(defaultLanguageFile);
         if (!languageDirectory.isDirectory()) languageDirectory.mkdir();
 
         if (plugin.getConfig().getString("locale") != null && !plugin.getConfig().getString("locale", "en_US").equalsIgnoreCase("en_US")) {
             if (Monitor.debug) plugin.getLogger().info("Debug: Loading custom language file: " + plugin.getConfig().getString("locale"));
-            File customLanguageFile = new File(plugin.getDataFolder(), "languages/" + plugin.getConfig().getString("locale") + ".yml");
+            customLanguageFile = new File(plugin.getDataFolder(), "languages/" + plugin.getConfig().getString("locale") + ".yml");
             if (!customLanguageFile.exists()) {
                 try {
                     InputStream stream = plugin.getResource("template.yml");
@@ -34,22 +38,22 @@ public class LanguageLoader {
                 }
             }
             FileConfiguration translations = YamlConfiguration.loadConfiguration(customLanguageFile);
-            if (translations.getKeys(true).equals(defaultTranslation.getKeys(true))) {
+            if (translations.getKeys(true).equals(defaultTranslations.getKeys(true))) {
                 if (Monitor.debug) plugin.getLogger().info("Debug: Keys are the same...");
                 for (String translation : translations.getKeys(true)){
                     translationMap.put(translation, translations.getString(translation));
                 }
             } else {
                 plugin.getLogger().severe("Keys are not the same! Loading default...");
-                loadDefault(defaultLanguageFile, plugin, defaultTranslation);
+                loadDefault(plugin);
             }
         } else {
-            loadDefault(defaultLanguageFile, plugin, defaultTranslation);
+            loadDefault(plugin);
         }
         if (Monitor.debug) plugin.getLogger().info("Debug: Translation map: " + translationMap);
     }
 
-    private void loadDefault(File defaultLanguageFile, JavaPlugin plugin, FileConfiguration defaultTranslations) {
+    private void loadDefault(JavaPlugin plugin) {
         if (Monitor.debug) plugin.getLogger().info("Debug: Loading default language file: en_US");
         if (defaultLanguageFile.exists()) defaultLanguageFile.delete();
         try {
@@ -72,7 +76,7 @@ public class LanguageLoader {
     public String createLang(Monitor plugin, String langName) {
         langName.toLowerCase();
         if (Monitor.debug) plugin.getLogger().info("Debug: Creating custom language file: " + langName);
-        File customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
+        customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
         if (!customLanguageFile.exists()) {
             try {
                 InputStream stream = plugin.getResource("template.yml");
@@ -98,7 +102,7 @@ public class LanguageLoader {
     public String removeLang(Monitor plugin, String langName) {
         langName.toLowerCase();
         if (Monitor.debug) plugin.getLogger().info("Debug: Removing custom language file " + langName);
-        File customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
+        customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
         if (customLanguageFile.exists()) {
             customLanguageFile.delete();
             plugin.getConfig().set("locale", "en_US");
@@ -113,7 +117,7 @@ public class LanguageLoader {
 
     public String setLang(Monitor plugin, String langName) {
         langName.toLowerCase();
-        File customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
+        customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
         if (Monitor.debug) plugin.getLogger().info("Debug: Setting language file " + customLanguageFile.getName());
         if (customLanguageFile.exists()) {
             plugin.getConfig().set("locale", langName);
@@ -129,8 +133,35 @@ public class LanguageLoader {
         }
     }
 
-    public String[] listLang(Monitor plugin) {
-        File languageDirectory = new File(plugin.getDataFolder(), "languages/");
-        return languageDirectory.list();
+    public ArrayList<String> listLang() {
+        String[] array = languageDirectory.list();
+        assert array != null;
+        ArrayList<String> list = new ArrayList<>(Arrays.asList(array).subList(0, Objects.requireNonNull(array).length));
+        list.removeIf(s -> !s.contains(".yml"));
+        return list;
+    }
+
+    public String editLang(Monitor plugin, String key, String newObject) throws IOException {
+        String locale = plugin.getConfig().getString("locale", "en_US").toLowerCase();
+        if (!locale.equalsIgnoreCase("en_US")) {
+            //File customLanguageFile = new File(plugin.getDataFolder(), "languages/" + locale + ".yml");
+            FileConfiguration translations = YamlConfiguration.loadConfiguration(customLanguageFile);
+            if (customLanguageFile.exists()) {
+                translations.set(key, newObject);
+                translations.save(customLanguageFile);
+                plugin.saveConfig();
+                plugin.reloadConfig();
+                plugin.readConfig();
+                return "Successfully edited " + locale;
+            } else {
+                return "Language file doesn't exist";
+            }
+        } else {
+            return "You can't write to default language file. You can create new one with /lumenmc lang create [language name]";
+        }
+    }
+
+    public List<String> getKeys() {
+        return defaultTranslations.getKeys(true).stream().toList();
     }
 }

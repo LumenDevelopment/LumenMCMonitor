@@ -16,6 +16,7 @@ import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -471,8 +472,7 @@ public class Monitor extends JavaPlugin implements Listener {
         if (!command.getName().equalsIgnoreCase("lumenmc")) return false;
 
         if (args.length == 0) {
-            sender.sendMessage("Use: /lumenmc test|lang|reload");
-            return true;
+            return false;
         }
 
         if (args[0].equalsIgnoreCase("test")) {
@@ -562,17 +562,80 @@ public class Monitor extends JavaPlugin implements Listener {
             }
 
             if (args[1].equalsIgnoreCase("list")) {
-                sender.sendMessage(langLoader.listLang(this));
+                sender.sendMessage("These are available language files:");
+                ArrayList<String> list = langLoader.listLang();
+                for (String s : list) {
+                    sender.sendMessage(s);
+                }
                 return true;
             }
 
-            sender.sendMessage("Use: /lumenmc lang create|remove|set|list");
+            if (args[1].equalsIgnoreCase("edit")) {
+                if (args.length == 2) {
+                    sender.sendMessage("Use: /lumenmc lang edit [key] [new string]");
+                    return true;
+                }
+
+                String key = args[2];
+                if (args.length == 3) {
+                    String message = langLoader.get(key);
+                    if (message == null) {
+                        sender.sendMessage("That key doesn't exist");
+                        return true;
+                    }
+                    sender.sendMessage("The key is set to " + message);
+                    return true;
+                }
+
+                StringBuilder newObject = new StringBuilder(args[3]);
+                if (args.length > 3) {
+                    for (int i = 4; i < args.length ; i++) {
+                        newObject.append(" ").append(args[i]);
+                    }
+                }
+                try {
+                    sender.sendMessage(langLoader.editLang(this, key, newObject.toString()));
+                } catch (IOException e) {
+                    getLogger().severe("Error when editing " + locale + ".yml");
+                }
+                return true;
+            }
+
+            sender.sendMessage("Use: /lumenmc lang create|remove|set|list|edit");
             return true;
         }
 
-        sender.sendMessage("Use: /lumenmc test|lang|reload|");
-        return true;
+        return false;
+    }
 
+    @Override
+    public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String alias, String @NonNull [] args) {
+        List<String> list = new ArrayList<>();
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 1) {
+            list.add("test");
+            list.add("reload");
+            list.add("lang");
+            list.sort(null);
+            return list;
+        }
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("lang")) {
+            list.add("create");
+            list.add("remove");
+            list.add("list");
+            list.add("set");
+            list.add("edit");
+            list.sort(null);
+            return list;
+        }
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("lang") && args[1].equalsIgnoreCase("set") || args[1].equalsIgnoreCase("remove")) {
+            list = langLoader.listLang();
+            list.sort(null);
+            return list;
+        }
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("lang") && args[1].equalsIgnoreCase("edit")) {
+            return langLoader.getKeys();
+        }
+        return list;
     }
 
     // Config
