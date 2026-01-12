@@ -44,8 +44,10 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Config
     private HttpClient httpClient;
-    private URI webhookUri;
+    private URI webhookUri = URI.create("");
+    private List<String> urls = new ArrayList<>();
     private Level minLevel;
+    private boolean enableLogs;
     private List<String> ignorePatterns;
     private boolean includeStackTraces;
     private int batchIntervalMs;
@@ -126,6 +128,7 @@ public class Monitor extends JavaPlugin implements Listener {
         commonHandler = new Handler() {
             @Override
             public void publish(LogRecord record) {
+                if (!enableLogs) return;
                 if (record == null || !isLoggable(record)) return;
                 if (record.getLevel().intValue() < minLevel.intValue()) return;
 
@@ -380,85 +383,91 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     private void sendContent(String content) {
-        try {
-            WebhookContentPayload payload = new WebhookContentPayload(content);
-            String json = gson.toJson(payload);
-            payload.username = "LumenMC";
-            payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
+        for (String s : urls) {
+            webhookUri = URI.create(s);
+            try {
+                WebhookContentPayload payload = new WebhookContentPayload(content);
+                String json = gson.toJson(payload);
+                payload.username = "LumenMC";
+                payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(webhookUri)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .build();
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(webhookUri)
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(json))
+                        .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            int status = response.statusCode();
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                int status = response.statusCode();
 
-            if (debug) {
-                getLogger().info("Debug: Webhook HTTP " + status +
-                        (response.body() != null ? (" body: " + response.body()) : ""));
+                if (debug) {
+                    getLogger().info("Debug: Webhook HTTP " + status +
+                            (response.body() != null ? (" body: " + response.body()) : ""));
+                }
+
+                if (status < 200 || status >= 300) {
+                    getLogger().warning("Discord webhook returned HTTP " + status + ": " + response.body());
+                }
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "Error when sending to webhook", e);
             }
-
-            if (status < 200 || status >= 300) {
-                getLogger().warning("Discord webhook returned HTTP " + status + ": " + response.body());
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error when sending to webhook", e);
         }
     }
 
     private void sendEmbed(String title, String description, int color) {
         try {
-            Embed embed = new Embed();
-            embed.title = title;
-            embed.description = description;
-            embed.color = color;
-            embed.timestamp = Instant.now().toString();
-            embed.footer = new Footer("LumenMC Monitor " + getDescription().getVersion() + " | " + LocalDateTime.now());
-            embed.image = new Image("https://cdn.lumenvm.cloud/lumenmc-banner.png");
+            for (String s : urls) {
+                webhookUri = URI.create(s);
+                Embed embed = new Embed();
+                embed.title = title;
+                embed.description = description;
+                embed.color = color;
+                embed.timestamp = Instant.now().toString();
+                embed.footer = new Footer("LumenMC Monitor " + getDescription().getVersion() + " | " + LocalDateTime.now());
+                embed.image = new Image("https://cdn.lumenvm.cloud/lumenmc-banner.png");
 
-            if (P_SERVER_LOCATION != null && !P_SERVER_LOCATION.isBlank() && P_SERVER_UUID != null && !P_SERVER_UUID.isBlank()) {
-                embed.fields = Arrays.asList(
-                        new Field("Time Zone", TZ, true),
-                        new Field("Server Memory", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
-                        new Field("Server IP", SERVER_IP, true),
-                        new Field("Server Port", SERVER_PORT, true),
-                        new Field("Server Location", P_SERVER_LOCATION, true),
-                        new Field("Server UUID", "```" + P_SERVER_UUID + "```", true),
-                        new Field("Server Version", getServer().getVersion(), true),
-                        new Field("Number of Plugins", String.valueOf(getServer().getPluginManager().getPlugins().length), true)
-                );
-            } else {
-                embed.fields = Arrays.asList(
-                        new Field("Time Zone", TimeZone.getDefault().getID(), true),
-                        new Field("Server Memory", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
-                        new Field("Server Version", getServer().getVersion(), true),
-                        new Field("Number of Plugins", String.valueOf(getServer().getPluginManager().getPlugins().length), true)
-                );
-            }
+                if (P_SERVER_LOCATION != null && !P_SERVER_LOCATION.isBlank() && P_SERVER_UUID != null && !P_SERVER_UUID.isBlank()) {
+                    embed.fields = Arrays.asList(
+                            new Field("Time Zone", TZ, true),
+                            new Field("Server Memory", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
+                            new Field("Server IP", SERVER_IP, true),
+                            new Field("Server Port", SERVER_PORT, true),
+                            new Field("Server Location", P_SERVER_LOCATION, true),
+                            new Field("Server UUID", "```" + P_SERVER_UUID + "```", true),
+                            new Field("Server Version", getServer().getVersion(), true),
+                            new Field("Number of Plugins", String.valueOf(getServer().getPluginManager().getPlugins().length), true)
+                    );
+                } else {
+                    embed.fields = Arrays.asList(
+                            new Field("Time Zone", TimeZone.getDefault().getID(), true),
+                            new Field("Server Memory", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
+                            new Field("Server Version", getServer().getVersion(), true),
+                            new Field("Number of Plugins", String.valueOf(getServer().getPluginManager().getPlugins().length), true)
+                    );
+                }
 
-            WebhookEmbedPayload payload = new WebhookEmbedPayload();
-            payload.username = "LumenMC";
-            payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
-            payload.embeds = Collections.singletonList(embed);
+                WebhookEmbedPayload payload = new WebhookEmbedPayload();
+                payload.username = "LumenMC";
+                payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
+                payload.embeds = Collections.singletonList(embed);
 
-            String json = gson.toJson(payload);
+                String json = gson.toJson(payload);
 
-            if (debug) {
-                getLogger().info("Debug: Sending embed to Discord \n" + json);
-            }
+                if (debug) {
+                    getLogger().info("Debug: Sending embed to Discord \n" + json);
+                }
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(webhookUri)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .build();
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(webhookUri)
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(json))
+                        .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (debug) {
-                getLogger().info("Debug: Webhook embed sent: HTTP " + response.statusCode());
-                getLogger().info("Debug: Response body: " + response.body());
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (debug) {
+                    getLogger().info("Debug: Webhook embed sent: HTTP " + response.statusCode());
+                    getLogger().info("Debug: Response body: " + response.body());
+                }
             }
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "Error when sending embed to Discord: ", e);
@@ -477,7 +486,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
         if (args[0].equalsIgnoreCase("test")) {
             if (webhookUri == null) {
-                sender.sendMessage("§cWebhook URL is NOT set. Pleas set it in config.yml, dumbass :)");
+                sender.sendMessage("§cWebhook URL is NOT set. Pleas set it in config.yml :)");
                 return true;
             }
             String content = "🔧 LumenMC test message in " + getDescription().getVersion() +
@@ -659,36 +668,37 @@ public class Monitor extends JavaPlugin implements Listener {
     void readConfig() {
         debug = getConfig().getBoolean("debug", false);
         langLoader = new LanguageLoader(this);
-        String url = WEBHOOK_URL;
+        urls = getConfig().getStringList("webhook_url");
 
-        if (url != null && !url.isBlank() && !url.equals(getConfig().getString("webhook_url", "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX"))) {
+
+        if (!urls.isEmpty() && !urls.contains("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
+            for (String s : urls) {
+                if (!s.contains("https://discord.com/api/webhooks/")) {
+                    getLogger().severe("Webhook URL is invalid: " + urls);
+                    webhookUri = null;
+                    return;
+                }
+            }
+        } else if (WEBHOOK_URL != null && !WEBHOOK_URL.isBlank()) {
             try {
-                webhookUri = URI.create(url);
-                getConfig().set("webhook_url", url);
+                webhookUri = URI.create(WEBHOOK_URL);
+                urls.add(WEBHOOK_URL);
+                getConfig().set("webhook_url", urls);
                 saveConfig();
                 if (debug) {
-                    getLogger().info("Debug: Discord Webhook url is set to: +" + webhookUri);
                     getLogger().info("Debug: Discord Webhook url saved to config.yml");
                 }
             } catch (IllegalArgumentException e) {
-                getLogger().severe("Webhook URL is invalid: " + url);
+                getLogger().severe("Webhook URL is invalid: " + urls);
                 webhookUri = null;
             }
         } else {
-            url = getConfig().getString("webhook_url", "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX");
-            if (!url.equals("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
-                try {
-                    webhookUri = URI.create(url);
-                    if (debug) {
-                        getLogger().info("Debug: Discord Webhook is url set to: +" + webhookUri);
-                    }
-                } catch (IllegalArgumentException e) {
-                    getLogger().severe("Debug: Webhook URL is invalid: " + url);
-                    webhookUri = null;
-                }
-            } else {
-                webhookUri = null;
-            }
+            urls = null;
+            webhookUri = null;
+        }
+
+        if (debug) {
+            getLogger().info("Debug: Discord Webhook is url set to: " + urls);
         }
 
         minLevel = parseLevel(getConfig().getString("min_level", "INFO"));
@@ -700,6 +710,7 @@ public class Monitor extends JavaPlugin implements Listener {
         removeMentions = getConfig().getBoolean("remove_mentions", true);
         captureSystemStreams = getConfig().getBoolean("capture_system_streams", true);
         locale = getConfig().getString("locale", "en_US");
+        enableLogs = getConfig().getBoolean("enable_logs", false);
 
         sendChat = getConfig().getBoolean("send_chat", true);
         sendPlayerCommands = getConfig().getBoolean("send_player_commands", true);

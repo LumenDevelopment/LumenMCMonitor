@@ -9,8 +9,11 @@ webhook_url: "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX"
 # Enter without .yml
 locale: "en_US"
 
+# Enable if you want to send logs
+enable_logs: false
+
 # Minimal logs level (SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST)
-min_level: "SEVERE"
+min_level: "INFO"
 
 # Send from chat
 send_chat: true

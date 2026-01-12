@@ -9,7 +9,7 @@ website: https://lumenvm.cloud/
 commands:
   lumenmc:
     description: Commands for LumenMC Monitor
-    usage: /lumenmc test|lang|reload (For full usage visit plugin website)
+    usage: /lumenmc test|lang|reload|setwebhook (For full usage visit plugin website)
     permission: lumenmc.admin
 permissions:
   lumenmc.admin:
