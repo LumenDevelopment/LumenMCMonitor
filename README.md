@@ -24,10 +24,21 @@ Video
 3. Ping prevention
 4. Filters
 5. Embeds
+6. Localization
+7. Multi webhook support
 
 ## Commands
 - /lumenmc reload - reloads config
 - /lumenmc test - sends a test webhook
+- /lumenmc lang - configures languages
+    - add - creates new language
+    - edit - edits existing language
+    - remove - removes existing language
+    - list - lists available languages
+    - set - sets language
+- /lumenmc webhook
+  - add - adds webhook
+  - remove - removes webhook
 
 ## License
 

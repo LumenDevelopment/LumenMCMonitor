@@ -61,7 +61,7 @@ public class LanguageLoader {
             assert stream != null;
             FileUtils.copyInputStreamToFile(stream, defaultLanguageFile);
         } catch (IOException e){
-            plugin.getLogger().severe("Unable to create default language file: " + e);
+            plugin.getLogger().severe("§cUnable to create default language file: " + e);
         }
         for (String translation : defaultTranslations.getKeys(false)){
             translationMap.put(translation, defaultTranslations.getString(translation));
@@ -93,9 +93,9 @@ public class LanguageLoader {
             plugin.saveConfig();
             plugin.reloadConfig();
             plugin.readConfig();
-            return "Custom language created and it's being used right now!";
+            return "§aCustom language created and it's being used right now!";
         } else {
-            return "Language already exists";
+            return "§cLanguage already exists";
         }
     }
 
@@ -109,9 +109,9 @@ public class LanguageLoader {
             plugin.saveConfig();
             plugin.reloadConfig();
             plugin.readConfig();
-            return "Removed language file " + langName + " and using default";
+            return "§aRemoved language file " + langName + " and using default";
         } else {
-            return "Language file doesn't exist";
+            return "§cLanguage file doesn't exist";
         }
     }
 
@@ -125,11 +125,11 @@ public class LanguageLoader {
             plugin.reloadConfig();
             plugin.readConfig();
             if (Monitor.getLocale().equalsIgnoreCase("en_US")) {
-                return "Set to default language";
+                return "§aSet to default language";
             }
-            return "Language set successfully";
+            return "§aLanguage set successfully";
         } else {
-            return "Language file doesn't exist";
+            return "§cLanguage file doesn't exist";
         }
     }
 

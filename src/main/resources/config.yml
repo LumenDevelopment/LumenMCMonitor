@@ -3,7 +3,9 @@
 ##############################
 
 # URL of discord webhook (Do not change if you're using LumenMC in Pterodactyl)
-webhook_url: "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX"
+webhook_url:
+  - https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX
+#  - another url
 
 # Default: en_US
 # Enter without .yml
