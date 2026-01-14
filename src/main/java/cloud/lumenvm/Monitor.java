@@ -38,56 +38,13 @@ import java.util.logging.Logger;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class Monitor extends JavaPlugin implements Listener {
-    // Localization
-    private LanguageLoader langLoader;
-    private static String locale;
-
     // Config
-    private HttpClient httpClient;
+    private LanguageLoader langLoader;
+    private ConfigLoader confLoader;
+    private String locale;
+    private static HttpClient httpClient;
     private URI webhookUri = URI.create("");
-    private List<String> urls = new ArrayList<>();
-    private Level minLevel;
-    private boolean enableLogs;
-    private List<String> ignorePatterns;
-    private boolean includeStackTraces;
-    private int batchIntervalMs;
-    private int maxBatchSize;
-    private int maxMessageLength;
-    private boolean removeMentions;
-    public static boolean debug;
-    private boolean captureSystemStreams;
-    private boolean failedToLoadConfig = false;
     private boolean reloading = false;
-
-    private boolean sendChat;
-    private boolean sendPlayerCommands;
-    private boolean sendConsoleCommands;
-    private boolean sendUuidPrelogin;
-    private boolean sendJoinQuit;
-    private boolean sendDeaths;
-    private boolean sendGamemodeChanges;
-    private boolean sendServerLoad;
-
-    // Embeds
-    private boolean embedsStartStopEnabled;
-
-    // Watchdog
-    private volatile long lastTickNanos = System.nanoTime();
-    private int watchdogHeartbeatTaskId = -1;
-    private int watchdogCheckerTaskId = -1;
-    private boolean watchdogEnabled;
-    private long watchdogTimeoutMs;
-    private long watchdogCheckIntervalMs;
-    private volatile boolean watchdogAlerted = false;
-
-    // Pterodactyl variables
-    private static final String WEBHOOK_URL = System.getenv("WEBHOOK_URL");
-    private static final String P_SERVER_LOCATION = System.getenv("P_SERVER_LOCATION");
-    private static final String P_SERVER_UUID = System.getenv("P_SERVER_UUID");
-    private static final String TZ = System.getenv("TZ");
-    private static final String SERVER_IP = System.getenv("SERVER_IP");
-    private static final String SERVER_PORT = System.getenv("SERVER_PORT");
-
 
     // Queue
     private final ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<>();
@@ -124,9 +81,10 @@ public class Monitor extends JavaPlugin implements Listener {
         httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
         saveDefaultConfig();
         reloadConfig();
-        readConfig();
+        confLoader = new ConfigLoader(this);
+        langLoader = new LanguageLoader(this, confLoader);
 
-        if (failedToLoadConfig) {
+        if (confLoader.failedToLoadConfig) {
             getLogger().severe("Webhook URL is NOT set. Pleas adjust pterodactyl server configuration/config.yml accordingly :)");
             onDisable();
             return;
@@ -135,9 +93,9 @@ public class Monitor extends JavaPlugin implements Listener {
         commonHandler = new Handler() {
             @Override
             public void publish(LogRecord record) {
-                if (!enableLogs) return;
+                if (!confLoader.enableLogs) return;
                 if (record == null || !isLoggable(record)) return;
-                if (record.getLevel().intValue() < minLevel.intValue()) return;
+                if (record.getLevel().intValue() < confLoader.minLevel.intValue()) return;
 
                 String msg = formatRecord(record);
                 if (shouldIgnore(msg)) return;
@@ -149,7 +107,7 @@ public class Monitor extends JavaPlugin implements Listener {
                     if (recentHashes.size() > DEDUPE_WINDOW) recentHashes.removeFirst();
                 }
 
-                for (String chunk : splitMessage(msg, maxMessageLength)) {
+                for (String chunk : splitMessage(msg, confLoader.maxMessageLength)) {
                     queue.offer(chunk);
                 }
             }
@@ -160,20 +118,20 @@ public class Monitor extends JavaPlugin implements Listener {
 
         attachHandlers();
 
-        if (debug) getLogger().info("Debug: Handlers connected in onLoad(); queueing logs");
+        if (confLoader.debug) getLogger().info("Debug: Handlers connected in onLoad(); queueing logs");
     }
 
     @Override
     public void onEnable() {
 
-        if (failedToLoadConfig) {
+        if (confLoader.failedToLoadConfig) {
             return;
         }
 
         // Register events
         getServer().getPluginManager().registerEvents(this, this);
 
-        int ticks = msToTicks(batchIntervalMs);
+        int ticks = msToTicks(confLoader.batchIntervalMs);
         taskId = Bukkit.getScheduler()
                 .runTaskTimerAsynchronously(this, this::drainAndSend, ticks, ticks)
                 .getTaskId();
@@ -181,45 +139,45 @@ public class Monitor extends JavaPlugin implements Listener {
         // Delete drain
         Bukkit.getScheduler().runTaskAsynchronously(this, this::drainAndSend);
 
-        if (captureSystemStreams) attachSystemStreamsTEE();
+        if (confLoader.captureSystemStreams) attachSystemStreamsTEE();
 
-        if (debug) getLogger().info("Debug: Sending activated (interval " + batchIntervalMs + " ms / " + ticks + " ticks).");
+        if (confLoader.debug) getLogger().info("Debug: Sending activated (interval " + confLoader.batchIntervalMs + " ms / " + ticks + " ticks).");
 
 
-        if (watchdogEnabled) {
+        if (confLoader.watchdogEnabled) {
             // Heartbeat
-            watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(this, () -> lastTickNanos = System.nanoTime(), 0L, 1L).getTaskId();
+            confLoader.watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(this, () -> confLoader.lastTickNanos = System.nanoTime(), 0L, 1L).getTaskId();
 
             // Async control
-            int checkTicks = msToTicks((int) watchdogCheckIntervalMs);
-            watchdogCheckerTaskId = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+            int checkTicks = msToTicks((int) confLoader.watchdogCheckIntervalMs);
+            confLoader.watchdogCheckerTaskId = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
                 long now = System.nanoTime();
-                long elapsedMs = (now - lastTickNanos) / 1_000_000L;
+                long elapsedMs = (now - confLoader.lastTickNanos) / 1_000_000L;
 
-                if (elapsedMs >= watchdogTimeoutMs) {
-                    if (!watchdogAlerted) {
-                        watchdogAlerted = true;
+                if (elapsedMs >= confLoader.watchdogTimeoutMs) {
+                    if (!confLoader.watchdogAlerted) {
+                        confLoader.watchdogAlerted = true;
                         enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + langLoader.get("watchdog_alert_message"));
-                        if (debug) getLogger().warning("WATCHDOG alert: main thread stalled for " + elapsedMs + " ms");
+                        if (confLoader.debug) getLogger().warning("WATCHDOG alert: main thread stalled for " + elapsedMs + " ms");
                     }
                 } else {
                     // Restored
-                    if (watchdogAlerted) {
-                        watchdogAlerted = false;
+                    if (confLoader.watchdogAlerted) {
+                        confLoader.watchdogAlerted = false;
                         enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + langLoader.get("watchdog_recovery_message"));
-                        if (debug) getLogger().info("WATCHDOG recovery: main thread delay " + elapsedMs + " ms");
+                        if (confLoader.debug) getLogger().info("WATCHDOG recovery: main thread delay " + elapsedMs + " ms");
                     }
                 }
             }, checkTicks, checkTicks).getTaskId();
 
-            if (debug) getLogger().info("Debug: Watchdog launched (timeout " + watchdogTimeoutMs + " ms, control every " + watchdogCheckIntervalMs + " ms).");
+            if (confLoader.debug) getLogger().info("Debug: Watchdog launched (timeout " + confLoader.watchdogTimeoutMs + " ms, control every " + confLoader.watchdogCheckIntervalMs + " ms).");
         }
 
     }
 
     @Override
     public void onDisable() {
-        if (!failedToLoadConfig && embedsStartStopEnabled && !reloading) {
+        if (!confLoader.failedToLoadConfig && confLoader.embedsStartStopEnabled && !reloading) {
             sendEmbed(langLoader.get("embed_stop_title"), langLoader.get("embed_stop_description"), Integer.parseInt(langLoader.get("embed_stop_color")));
         }
 
@@ -233,13 +191,13 @@ public class Monitor extends JavaPlugin implements Listener {
         detachSystemStreamsTEE();
         drainAndSend();
 
-        if (watchdogHeartbeatTaskId != -1) {
-            Bukkit.getScheduler().cancelTask(watchdogHeartbeatTaskId);
-            watchdogHeartbeatTaskId = -1;
+        if (confLoader.watchdogHeartbeatTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(confLoader.watchdogHeartbeatTaskId);
+            confLoader.watchdogHeartbeatTaskId = -1;
         }
-        if (watchdogCheckerTaskId != -1) {
-            Bukkit.getScheduler().cancelTask(watchdogCheckerTaskId);
-            watchdogCheckerTaskId = -1;
+        if (confLoader.watchdogCheckerTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(confLoader.watchdogCheckerTaskId);
+            confLoader.watchdogCheckerTaskId = -1;
         }
     }
 
@@ -247,7 +205,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
-        if (!sendChat) return;
+        if (!confLoader.sendChat) return;
         String player = event.getPlayer().getName();
         String message = event.getMessage();
 
@@ -257,7 +215,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
-        if (!sendPlayerCommands) return;
+        if (!confLoader.sendPlayerCommands) return;
         String player = event.getPlayer().getName();
         String cmd = event.getMessage();
 
@@ -267,7 +225,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent event) {
-        if (!sendConsoleCommands) return;
+        if (!confLoader.sendConsoleCommands) return;
         String cmd = event.getCommand();
 
         String content = "[" + Instant.now() + "] [CMD] CONSOLE: /" + cmd;
@@ -276,7 +234,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onAsyncPreLogin(AsyncPlayerPreLoginEvent event) {
-        if (!sendUuidPrelogin) return;
+        if (!confLoader.sendUuidPrelogin) return;
         String name = event.getName();
         UUID uuid = event.getUniqueId();
         String content = "[" + Instant.now() + "] [LOGIN] UUID of player " + name + ": " + uuid;
@@ -285,7 +243,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onJoin(PlayerJoinEvent event) {
-        if (!sendJoinQuit) return;
+        if (!confLoader.sendJoinQuit) return;
         String name = event.getPlayer().getName();
         String content = "[" + Instant.now() + "] [JOIN] " + name + " joined the game";
         enqueueIfAllowed(content);
@@ -299,7 +257,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onQuit(PlayerQuitEvent event) {
-        if (!sendJoinQuit) return;
+        if (!confLoader.sendJoinQuit) return;
         String name = event.getPlayer().getName();
         String content = "[" + Instant.now() + "] [QUIT] " + name + " left the game";
         enqueueIfAllowed(content);
@@ -307,7 +265,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(PlayerDeathEvent event) {
-        if (!sendDeaths) return;
+        if (!confLoader.sendDeaths) return;
         String msg = event.getDeathMessage();
         if (msg == null || msg.isBlank()) return;
         String content = "[" + Instant.now() + "] [DEATH] " + msg;
@@ -316,7 +274,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onGamemodeChange(PlayerGameModeChangeEvent event) {
-        if (!sendGamemodeChanges) return;
+        if (!confLoader.sendGamemodeChanges) return;
         String name = event.getPlayer().getName();
         GameMode newMode = event.getNewGameMode();
         String content = "[" + Instant.now() + "] [GAMEMODE] " + name + " set own game mode to " + prettyMode(newMode);
@@ -325,8 +283,8 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onServerLoad(ServerLoadEvent event) {
-        if (!sendServerLoad) return;
-        if (embedsStartStopEnabled) {
+        if (!confLoader.sendServerLoad) return;
+        if (confLoader.embedsStartStopEnabled) {
             sendEmbed(langLoader.get("embed_start_title"), langLoader.get("embed_start_description"), Integer.parseInt(langLoader.get("embed_start_color")));
         }
         else{
@@ -347,11 +305,11 @@ public class Monitor extends JavaPlugin implements Listener {
     // Send
 
     private void enqueueIfAllowed(String content) {
-        if (removeMentions) {
+        if (confLoader.removeMentions) {
             content = content.replace("@everyone", "＠everyone").replace("@here", "＠here");
         }
         if (!shouldIgnore(content)) {
-            for (String chunk : splitMessage(content, maxMessageLength)) {
+            for (String chunk : splitMessage(content, confLoader.maxMessageLength)) {
                 queue.offer(chunk);
             }
         }
@@ -365,8 +323,8 @@ public class Monitor extends JavaPlugin implements Listener {
             return;
         }
         try {
-            List<String> batch = new ArrayList<>(maxBatchSize);
-            while (batch.size() < maxBatchSize) {
+            List<String> batch = new ArrayList<>(confLoader.maxBatchSize);
+            while (batch.size() < confLoader.maxBatchSize) {
                 String item = queue.poll();
                 if (item == null) break;
                 batch.add(item);
@@ -374,9 +332,9 @@ public class Monitor extends JavaPlugin implements Listener {
             if (batch.isEmpty()) return;
 
             String combined = String.join("\n", batch);
-            List<String> payloads = splitMessage(combined, maxMessageLength);
+            List<String> payloads = splitMessage(combined, confLoader.maxMessageLength);
 
-            if (debug) getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
+            if (confLoader.debug) getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
 
             for (String content : payloads) {
                 sendContent(content);
@@ -389,7 +347,7 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     private void sendContent(String content) {
-        for (String s : urls) {
+        for (String s : confLoader.urls) {
             webhookUri = URI.create(s);
             try {
                 WebhookContentPayload payload = new WebhookContentPayload(content);
@@ -406,7 +364,7 @@ public class Monitor extends JavaPlugin implements Listener {
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                 int status = response.statusCode();
 
-                if (debug) {
+                if (confLoader.debug) {
                     getLogger().info("Debug: Webhook HTTP " + status +
                             (response.body() != null ? (" body: " + response.body()) : ""));
                 }
@@ -422,7 +380,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     private void sendEmbed(String title, String description, int color) {
         try {
-            for (String s : urls) {
+            for (String s : confLoader.urls) {
                 webhookUri = URI.create(s);
                 Embed embed = new Embed();
                 embed.title = title;
@@ -432,14 +390,14 @@ public class Monitor extends JavaPlugin implements Listener {
                 embed.footer = new Footer("LumenMC Monitor " + getDescription().getVersion() + " | " + LocalDateTime.now());
                 embed.image = new Image("https://cdn.lumenvm.cloud/lumenmc-banner.png");
 
-                if (P_SERVER_LOCATION != null && !P_SERVER_LOCATION.isBlank() && P_SERVER_UUID != null && !P_SERVER_UUID.isBlank()) {
+                if (confLoader.P_SERVER_LOCATION != null && !confLoader.P_SERVER_LOCATION.isBlank() && confLoader.P_SERVER_UUID != null && !confLoader.P_SERVER_UUID.isBlank()) {
                     embed.fields = Arrays.asList(
-                            new Field("Time Zone", TZ, true),
+                            new Field("Time Zone", confLoader.TZ, true),
                             new Field("Server Memory", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
-                            new Field("Server IP", SERVER_IP, true),
-                            new Field("Server Port", SERVER_PORT, true),
-                            new Field("Server Location", P_SERVER_LOCATION, true),
-                            new Field("Server UUID", "```" + P_SERVER_UUID + "```", true),
+                            new Field("Server IP", confLoader.SERVER_IP, true),
+                            new Field("Server Port", confLoader.SERVER_PORT, true),
+                            new Field("Server Location", confLoader.P_SERVER_LOCATION, true),
+                            new Field("Server UUID", "```" + confLoader.P_SERVER_UUID + "```", true),
                             new Field("Server Version", getServer().getVersion(), true),
                             new Field("Number of Plugins", String.valueOf(getServer().getPluginManager().getPlugins().length), true)
                     );
@@ -459,7 +417,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
                 String json = gson.toJson(payload);
 
-                if (debug) {
+                if (confLoader.debug) {
                     getLogger().info("Debug: Sending embed to Discord \n" + json);
                 }
 
@@ -470,7 +428,7 @@ public class Monitor extends JavaPlugin implements Listener {
                         .build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                if (debug) {
+                if (confLoader.debug) {
                     getLogger().info("Debug: Webhook embed sent: HTTP " + response.statusCode());
                     getLogger().info("Debug: Response body: " + response.body());
                 }
@@ -490,7 +448,7 @@ public class Monitor extends JavaPlugin implements Listener {
             return false;
         }
 
-        if (args[0].equalsIgnoreCase("test") && !failedToLoadConfig) {
+        if (args[0].equalsIgnoreCase("test") && !confLoader.failedToLoadConfig) {
             if (webhookUri == null) {
                 sender.sendMessage("§cWebhook URL is NOT set. Pleas set it in config.yml :)");
                 return true;
@@ -513,7 +471,7 @@ public class Monitor extends JavaPlugin implements Listener {
             return true;
         }
 
-        if (args[0].equalsIgnoreCase("lang")  && !failedToLoadConfig) {
+        if (args[0].equalsIgnoreCase("lang")  && !confLoader.failedToLoadConfig) {
             if (args.length == 1) {
                 sender.sendMessage("Use: /lumenmc lang create|remove|set|list");
                 return true;
@@ -623,7 +581,7 @@ public class Monitor extends JavaPlugin implements Listener {
             return true;
         }
 
-        if (args[0].equalsIgnoreCase("webhook")  && !failedToLoadConfig) {
+        if (args[0].equalsIgnoreCase("webhook")  && !confLoader.failedToLoadConfig) {
             if (args.length == 1) {
                 sender.sendMessage("Use: /lumenmc webhook add|remove");
                 return true;
@@ -633,36 +591,34 @@ public class Monitor extends JavaPlugin implements Listener {
                     sender.sendMessage("Use: /lumenmc webhook add [webhookUrl]");
                     return true;
                 }
-                if (webhookTest(args[2])) {
-                    urls.add(args[2]);
-                    getConfig().set("webhook_url", urls);
+                if (webhookTest(this, args[2])) {
+                    confLoader.urls.add(args[2]);
+                    getConfig().set("webhook_url", confLoader.urls);
                     saveConfig();
                     reloadConfig();
-                    readConfig();
+                    loadConfig();
                     sender.sendMessage("§aSet webhook url to: " + args[2]);
-                    return true;
                 } else {
                     sender.sendMessage("§cInvalid webhook url: " + args[1]);
-                    return true;
                 }
+                return true;
             }
             if (args[1].equalsIgnoreCase("remove")) {
                 if (args.length == 2) {
                     sender.sendMessage("Use: /lumenmc webhook remove [webhookUrl]");
                     return true;
                 }
-                if (urls.contains(args[2]) && webhookTest(args[2])) {
-                    urls.remove(args[2]);
-                    getConfig().set("webhook_url", urls);
+                if (confLoader.urls.contains(args[2]) && webhookTest(this, args[2])) {
+                    confLoader.urls.remove(args[2]);
+                    getConfig().set("webhook_url", confLoader.urls);
                     saveConfig();
                     reloadConfig();
-                    readConfig();
+                    loadConfig();
                     sender.sendMessage("§aRemoved webhook url: " + args[2]);
-                    return true;
                 } else {
                     sender.sendMessage("§cInvalid webhook url: " + args[2]);
-                    return true;
                 }
+                return true;
             }
         }
 
@@ -686,7 +642,7 @@ public class Monitor extends JavaPlugin implements Listener {
             return list;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook") && args[1].equalsIgnoreCase("remove")) {
-            return urls;
+            return confLoader.urls;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("lang")) {
             list.add("create");
@@ -710,70 +666,12 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Config
 
-    void readConfig() {
-        debug = getConfig().getBoolean("debug", false);
-        langLoader = new LanguageLoader(this);
-        urls = getConfig().getStringList("webhook_url");
-
-
-        if (!urls.isEmpty() && !urls.contains("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
-            for (String s : urls) {
-                if (!webhookTest(s)) {
-                    getLogger().severe("Webhook URL is invalid: " + urls);
-                    failedToLoadConfig = true;
-                    return;
-                }
-            }
-        } else if (WEBHOOK_URL != null && !WEBHOOK_URL.isBlank()) {
-            if (!webhookTest(WEBHOOK_URL)) {
-                urls.add(WEBHOOK_URL);
-                getConfig().set("webhook_url", urls);
-                saveConfig();
-                if (debug) {
-                    getLogger().info("Debug: Discord Webhook url saved to config.yml");
-                }
-            } else {
-                getLogger().severe("Webhook URL is invalid: " + urls);
-                failedToLoadConfig = true;
-                return;
-            }
-        } else {
-            urls = null;
-            failedToLoadConfig = true;
-            return;
-        }
-
-        if (debug) {
-            getLogger().info("Debug: Discord Webhook is url set to: " + urls);
-        }
-
-        minLevel = parseLevel(getConfig().getString("min_level", "INFO"));
-        ignorePatterns = getConfig().getStringList("ignore_patterns");
-        includeStackTraces = getConfig().getBoolean("include_stack_traces", true);
-        batchIntervalMs = getConfig().getInt("batch_interval_ms", 2000);
-        maxBatchSize = getConfig().getInt("max_batch_size", 50);
-        maxMessageLength = getConfig().getInt("max_message_length", 1900);
-        removeMentions = getConfig().getBoolean("remove_mentions", true);
-        captureSystemStreams = getConfig().getBoolean("capture_system_streams", true);
-        locale = getConfig().getString("locale", "en_US");
-        enableLogs = getConfig().getBoolean("enable_logs", false);
-
-        sendChat = getConfig().getBoolean("send_chat", true);
-        sendPlayerCommands = getConfig().getBoolean("send_player_commands", true);
-        sendConsoleCommands = getConfig().getBoolean("send_console_commands", true);
-        sendUuidPrelogin = getConfig().getBoolean("send_uuid_prelogin", true);
-        sendJoinQuit = getConfig().getBoolean("send_join_quit", true);
-        sendDeaths = getConfig().getBoolean("send_deaths", true);
-        sendGamemodeChanges = getConfig().getBoolean("send_gamemode_changes", true);
-        sendServerLoad = getConfig().getBoolean("send_server_load", true);
-
-        embedsStartStopEnabled = getConfig().getBoolean("embeds_start_stop_enabled", true);
-
-        watchdogEnabled = getConfig().getBoolean("watchdog_enabled", true);
-        watchdogTimeoutMs = getConfig().getLong("watchdog_timeout_ms", 10000L);
-        watchdogCheckIntervalMs = getConfig().getLong("watchdog_check_interval_ms", 2000L);
-
-        failedToLoadConfig = false;
+    void loadConfig() {
+        reloading = true;
+        onDisable();
+        onLoad();
+        onEnable();
+        reloading = false;
     }
 
     // Handlers
@@ -808,7 +706,7 @@ public class Monitor extends JavaPlugin implements Listener {
         attachNamedLoggers();
 
         handlersAttached = true;
-        if (debug) getLogger().info("Debug: Handlers connected (root/Bukkit level = ALL).");
+        if (confLoader.debug) getLogger().info("Debug: Handlers connected (root/Bukkit level = ALL).");
     }
 
     private void attachNamedLoggers() {
@@ -822,9 +720,9 @@ public class Monitor extends JavaPlugin implements Listener {
                 for (Handler h : l.getHandlers()) {
                     try { h.setLevel(Level.ALL); } catch (Exception ignored) {}
                 }
-                if (debug) getLogger().info("Debug: Handler connected to logger  '" + name + "'");
+                if (confLoader.debug) getLogger().info("Debug: Handler connected to logger  '" + name + "'");
             } catch (Exception e) {
-                if (debug) getLogger().warning("Debug: Couldn't connect to logger  '" + name + "': " + e.getMessage());
+                if (confLoader.debug) getLogger().warning("Debug: Couldn't connect to logger  '" + name + "': " + e.getMessage());
             }
         }
     }
@@ -854,7 +752,7 @@ public class Monitor extends JavaPlugin implements Listener {
                 super.println(x);
             }
         });
-        if (debug) getLogger().info("Debug: System streams on.");
+        if (confLoader.debug) getLogger().info("Debug: System streams on.");
     }
 
     private void detachSystemStreamsTEE() {
@@ -870,25 +768,25 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Help methods
 
-    private boolean webhookTest(String url) {
+    public boolean webhookTest(Monitor plugin, String url) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json")
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = Monitor.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 401) {
                 return false;
             } else return response.statusCode() == 200;
         } catch (Exception e) {
-            getLogger().warning("Error when testing webhook urls: " + e);
+            plugin.getLogger().warning("Error when testing webhook urls: " + e);
             return false;
         }
     }
 
-    private Level parseLevel(String s) {
+    Level parseLevel(String s) {
         try { return Level.parse(s == null ? "INFO" : s.toUpperCase()); }
         catch (Exception e) { return Level.INFO; }
     }
@@ -899,8 +797,8 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     private boolean shouldIgnore(String msg) {
-        if (msg == null || ignorePatterns == null) return false;
-        for (String pattern : ignorePatterns) {
+        if (msg == null || confLoader.ignorePatterns == null) return false;
+        for (String pattern : confLoader.ignorePatterns) {
             if (pattern == null || pattern.isBlank()) continue;
             try { if (msg.matches(pattern)) return true; }
             catch (Exception ignored) {}
@@ -927,12 +825,12 @@ public class Monitor extends JavaPlugin implements Listener {
 
         if (formattedMsg != null) sb.append(formattedMsg);
 
-        if (includeStackTraces && record.getThrown() != null) {
+        if (confLoader.includeStackTraces && record.getThrown() != null) {
             sb.append("\n").append(stackTraceToString(record.getThrown()));
         }
 
         String result = sb.toString();
-        if (removeMentions) {
+        if (confLoader.removeMentions) {
             result = result.replace("@everyone", "＠everyone").replace("@here", "＠here");
         }
         return result;
@@ -959,8 +857,12 @@ public class Monitor extends JavaPlugin implements Listener {
         return parts;
     }
 
-    public static String getLocale() {
+    public String getLocale() {
         return locale;
+    }
+
+    public void setLocale(String setLocale) {
+        locale = setLocale;
     }
 
     // Content-only payload

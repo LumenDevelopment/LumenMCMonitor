@@ -17,16 +17,18 @@ public class LanguageLoader {
     File defaultLanguageFile;
     File customLanguageFile;
     FileConfiguration defaultTranslations;
+    private final ConfigLoader confLoader;
 
 
-    public LanguageLoader(Monitor plugin){
+    public LanguageLoader(Monitor plugin, ConfigLoader configLoader){
+        confLoader = configLoader;
         languageDirectory = new File(plugin.getDataFolder(), "languages/");
         defaultLanguageFile = new File(plugin.getDataFolder(), "languages/en_US.yml");
         defaultTranslations = YamlConfiguration.loadConfiguration(defaultLanguageFile);
         if (!languageDirectory.isDirectory()) languageDirectory.mkdir();
 
         if (plugin.getConfig().getString("locale") != null && !plugin.getConfig().getString("locale", "en_US").equalsIgnoreCase("en_US")) {
-            if (Monitor.debug) plugin.getLogger().info("Debug: Loading custom language file: " + plugin.getConfig().getString("locale"));
+            if (confLoader.debug) plugin.getLogger().info("Debug: Loading custom language file: " + plugin.getConfig().getString("locale"));
             customLanguageFile = new File(plugin.getDataFolder(), "languages/" + plugin.getConfig().getString("locale") + ".yml");
             if (!customLanguageFile.exists()) {
                 try {
@@ -39,7 +41,7 @@ public class LanguageLoader {
             }
             FileConfiguration translations = YamlConfiguration.loadConfiguration(customLanguageFile);
             if (translations.getKeys(true).equals(defaultTranslations.getKeys(true))) {
-                if (Monitor.debug) plugin.getLogger().info("Debug: Keys are the same...");
+                if (confLoader.debug) plugin.getLogger().info("Debug: Keys are the same...");
                 for (String translation : translations.getKeys(true)){
                     translationMap.put(translation, translations.getString(translation));
                 }
@@ -50,11 +52,11 @@ public class LanguageLoader {
         } else {
             loadDefault(plugin);
         }
-        if (Monitor.debug) plugin.getLogger().info("Debug: Translation map: " + translationMap);
+        if (confLoader.debug) plugin.getLogger().info("Debug: Translation map: " + translationMap);
     }
 
     private void loadDefault(JavaPlugin plugin) {
-        if (Monitor.debug) plugin.getLogger().info("Debug: Loading default language file: en_US");
+        if (confLoader.debug) plugin.getLogger().info("Debug: Loading default language file: en_US");
         if (defaultLanguageFile.exists()) defaultLanguageFile.delete();
         try {
             InputStream stream = plugin.getResource("en_US.yml");
@@ -75,7 +77,7 @@ public class LanguageLoader {
     // Returns response
     public String createLang(Monitor plugin, String langName) {
         langName.toLowerCase();
-        if (Monitor.debug) plugin.getLogger().info("Debug: Creating custom language file: " + langName);
+        if (confLoader.debug) plugin.getLogger().info("Debug: Creating custom language file: " + langName);
         customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
         if (!customLanguageFile.exists()) {
             try {
@@ -92,7 +94,7 @@ public class LanguageLoader {
             plugin.getConfig().set("locale", langName);
             plugin.saveConfig();
             plugin.reloadConfig();
-            plugin.readConfig();
+            plugin.loadConfig();
             return "§aCustom language created and it's being used right now!";
         } else {
             return "§cLanguage already exists";
@@ -101,14 +103,14 @@ public class LanguageLoader {
 
     public String removeLang(Monitor plugin, String langName) {
         langName.toLowerCase();
-        if (Monitor.debug) plugin.getLogger().info("Debug: Removing custom language file " + langName);
+        if (confLoader.debug) plugin.getLogger().info("Debug: Removing custom language file " + langName);
         customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
         if (customLanguageFile.exists()) {
             customLanguageFile.delete();
             plugin.getConfig().set("locale", "en_US");
             plugin.saveConfig();
             plugin.reloadConfig();
-            plugin.readConfig();
+            plugin.loadConfig();
             return "§aRemoved language file " + langName + " and using default";
         } else {
             return "§cLanguage file doesn't exist";
@@ -118,13 +120,13 @@ public class LanguageLoader {
     public String setLang(Monitor plugin, String langName) {
         langName.toLowerCase();
         customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
-        if (Monitor.debug) plugin.getLogger().info("Debug: Setting language file " + customLanguageFile.getName());
+        if (confLoader.debug) plugin.getLogger().info("Debug: Setting language file " + customLanguageFile.getName());
         if (customLanguageFile.exists()) {
             plugin.getConfig().set("locale", langName);
             plugin.saveConfig();
             plugin.reloadConfig();
-            plugin.readConfig();
-            if (Monitor.getLocale().equalsIgnoreCase("en_US")) {
+            plugin.loadConfig();
+            if (plugin.getLocale().equalsIgnoreCase("en_US")) {
                 return "§aSet to default language";
             }
             return "§aLanguage set successfully";
@@ -151,7 +153,7 @@ public class LanguageLoader {
                 translations.save(customLanguageFile);
                 plugin.saveConfig();
                 plugin.reloadConfig();
-                plugin.readConfig();
+                plugin.loadConfig();
                 return "Successfully edited " + locale;
             } else {
                 return "Language file doesn't exist";
