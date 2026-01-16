@@ -55,7 +55,7 @@ public class LanguageLoader {
         if (confLoader.debug) plugin.getLogger().info("Debug: Translation map: " + translationMap);
     }
 
-    private void loadDefault(JavaPlugin plugin) {
+    private void loadDefault(Monitor plugin) {
         if (confLoader.debug) plugin.getLogger().info("Debug: Loading default language file: en_US");
         if (defaultLanguageFile.exists()) defaultLanguageFile.delete();
         try {

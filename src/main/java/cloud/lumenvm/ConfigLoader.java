@@ -31,8 +31,6 @@ public class ConfigLoader {
 
     // Watchdog
     public volatile long lastTickNanos = System.nanoTime();
-    public int watchdogHeartbeatTaskId = -1;
-    public int watchdogCheckerTaskId = -1;
     public boolean watchdogEnabled;
     public long watchdogTimeoutMs;
     public long watchdogCheckIntervalMs;

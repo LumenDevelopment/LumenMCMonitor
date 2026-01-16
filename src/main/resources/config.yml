@@ -26,9 +26,6 @@ send_player_commands: false
 # Send console commands
 send_console_commands: false
 
-# Send uuid at prelogin
-send_uuid_prelogin: false
-
 # Send join and quit messages
 send_join_quit: true
 

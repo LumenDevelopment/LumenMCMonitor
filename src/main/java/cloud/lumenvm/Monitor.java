@@ -46,6 +46,9 @@ public class Monitor extends JavaPlugin implements Listener {
     private URI webhookUri = URI.create("");
     private boolean reloading = false;
 
+    public int watchdogHeartbeatTaskId = -1;
+    public int watchdogCheckerTaskId = -1;
+
     // Queue
     private final ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<>();
 
@@ -86,7 +89,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
         if (confLoader.failedToLoadConfig) {
             getLogger().severe("Webhook URL is NOT set. Pleas adjust pterodactyl server configuration/config.yml accordingly :)");
-            onDisable();
+            getServer().getPluginManager().disablePlugin(this);
             return;
         }
 
@@ -129,7 +132,9 @@ public class Monitor extends JavaPlugin implements Listener {
         }
 
         // Register events
-        getServer().getPluginManager().registerEvents(this, this);
+        if (!reloading) {
+            getServer().getPluginManager().registerEvents(this, this);
+        }
 
         int ticks = msToTicks(confLoader.batchIntervalMs);
         taskId = Bukkit.getScheduler()
@@ -146,11 +151,11 @@ public class Monitor extends JavaPlugin implements Listener {
 
         if (confLoader.watchdogEnabled) {
             // Heartbeat
-            confLoader.watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(this, () -> confLoader.lastTickNanos = System.nanoTime(), 0L, 1L).getTaskId();
+            watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(this, () -> confLoader.lastTickNanos = System.nanoTime(), 0L, 1L).getTaskId();
 
             // Async control
             int checkTicks = msToTicks((int) confLoader.watchdogCheckIntervalMs);
-            confLoader.watchdogCheckerTaskId = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+            watchdogCheckerTaskId = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
                 long now = System.nanoTime();
                 long elapsedMs = (now - confLoader.lastTickNanos) / 1_000_000L;
 
@@ -191,13 +196,13 @@ public class Monitor extends JavaPlugin implements Listener {
         detachSystemStreamsTEE();
         drainAndSend();
 
-        if (confLoader.watchdogHeartbeatTaskId != -1) {
-            Bukkit.getScheduler().cancelTask(confLoader.watchdogHeartbeatTaskId);
-            confLoader.watchdogHeartbeatTaskId = -1;
+        if (watchdogHeartbeatTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(watchdogHeartbeatTaskId);
+            watchdogHeartbeatTaskId = -1;
         }
-        if (confLoader.watchdogCheckerTaskId != -1) {
-            Bukkit.getScheduler().cancelTask(confLoader.watchdogCheckerTaskId);
-            confLoader.watchdogCheckerTaskId = -1;
+        if (watchdogCheckerTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(watchdogCheckerTaskId);
+            watchdogCheckerTaskId = -1;
         }
     }
 
@@ -227,18 +232,8 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onServerCommand(ServerCommandEvent event) {
         if (!confLoader.sendConsoleCommands) return;
         String cmd = event.getCommand();
-
-        String content = "[" + Instant.now() + "] [CMD] CONSOLE: /" + cmd;
-        enqueueIfAllowed(content);
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onAsyncPreLogin(AsyncPlayerPreLoginEvent event) {
-        if (!confLoader.sendUuidPrelogin) return;
-        String name = event.getName();
-        UUID uuid = event.getUniqueId();
-        String content = "[" + Instant.now() + "] [LOGIN] UUID of player " + name + ": " + uuid;
-        enqueueIfAllowed(content);
+        String content = langLoader.get("on_server_command");
+        enqueueIfAllowed(content.replace("%lumenmc_cmd%", "[" + Instant.now() + "]" + cmd));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -351,9 +346,9 @@ public class Monitor extends JavaPlugin implements Listener {
             webhookUri = URI.create(s);
             try {
                 WebhookContentPayload payload = new WebhookContentPayload(content);
-                String json = gson.toJson(payload);
                 payload.username = "LumenMC";
-                payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
+                payload.avatar_url = "https://cdn.lumenvm.cloud/logo.png";
+                String json = gson.toJson(payload);
 
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(webhookUri)
@@ -412,7 +407,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
                 WebhookEmbedPayload payload = new WebhookEmbedPayload();
                 payload.username = "LumenMC";
-                payload.avatar_url = "https://cdn.lumenvm.cloud/lumen-avatar.png";
+                payload.avatar_url = "https://cdn.lumenvm.cloud/logo.png";
                 payload.embeds = Collections.singletonList(embed);
 
                 String json = gson.toJson(payload);
@@ -867,9 +862,9 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Content-only payload
     static class WebhookContentPayload {
-        @SerializedName("content") String content;
         @SerializedName("username") String username;
         @SerializedName("avatar_url") String avatar_url;
+        @SerializedName("content") String content;
         WebhookContentPayload(String content) { this.content = content; }
     }
 

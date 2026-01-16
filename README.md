@@ -1,11 +1,8 @@
 # LumenMC Monitor
-
-[![Discord](https://badgen.net/discord/members/zUueFq98bB?icon=discord&label=Discord&list=what)](https://discord.gg/zUueFq98bB)
-
 ## Minecraft plugin that sends Discord Webhooks from your server!
-It's designed to work with [LumenMC](https://builtbybit.com/resources/lumenmc.52562/), but it works fine even without it. 
-Basic and advanced configuration is available through ```config.yml```. 
-It sends everything from server startup, player chats, commands to death messages. 
+It's designed to work with [LumenMC](https://builtbybit.com/resources/lumenmc.52562/), but it works fine even without it.
+Basic and advanced configuration is available through ```config.yml```.
+It sends everything from server startup, player chats, commands to death messages.
 It even notifies you when the server stops ticking!
 
 > ⚠️ Warning
@@ -16,24 +13,35 @@ Video
 
 ## Features
 1. Can send messages:
-   - Server start/stop
-   - Player's death
-   - Gamemode change
-   - Join and quit
-   - Console messages and errors
-   - Watchdog - stopped ticking
-   - And more...
+    - Server start/stop
+    - Player's death
+    - Gamemode change
+    - Join and quit
+    - Console messages and errors
+    - Watchdog - stopped ticking
+    - And more...
 2. Message customization
 3. Ping prevention
 4. Filters
 5. Embeds
+6. Localization
+7. Multi webhook support
 
 ## Commands
 - /lumenmc reload - reloads config
 - /lumenmc test - sends a test webhook
+- /lumenmc lang - configures languages
+    - add - creates new language
+    - edit - edits existing language
+    - remove - removes existing language
+    - list - lists available languages
+    - set - sets language
+- /lumenmc webhook
+    - add - adds webhook
+    - remove - removes webhook
 
 ## License
-
+We're using GPL
 
 ## Links
 
