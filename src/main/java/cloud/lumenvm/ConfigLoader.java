@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.logging.Level;
 
 public class ConfigLoader {
-    public List<String> urls;
+    public String url;
     public Level minLevel;
     public boolean enableLogs;
     public List<String> ignorePatterns;
@@ -16,6 +16,7 @@ public class ConfigLoader {
     public boolean debug;
     public boolean captureSystemStreams;
     public boolean failedToLoadConfig;
+    public String name;
 
     public boolean sendChat;
     public boolean sendPlayerCommands;
@@ -44,40 +45,38 @@ public class ConfigLoader {
     public final String SERVER_IP = System.getenv("SERVER_IP");
     public final String SERVER_PORT = System.getenv("SERVER_PORT");
 
-    public ConfigLoader(Monitor plugin) {
+    public ConfigLoader(Monitor plugin, String name) {
         debug = plugin.getConfig().getBoolean("debug", false);
-        urls = plugin.getConfig().getStringList("webhook_url");
+        this.name = name;
+        url = plugin.getConfig().getString("webhooks." + name + ".url", "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX");
 
-
-        if (!urls.isEmpty() && !urls.contains("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
-            for (String s : urls) {
-                if (!plugin.webhookTest(plugin, s)) {
-                    plugin.getLogger().severe("Webhook URL is invalid: " + urls);
-                    failedToLoadConfig = true;
-                    return;
-                }
+        if (!url.isEmpty() && !url.equalsIgnoreCase("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
+            if (!plugin.webhookTest(url)) {
+                plugin.getLogger().severe("Webhook URL is invalid: " + url);
+                failedToLoadConfig = true;
+                return;
             }
         } else if (WEBHOOK_URL != null && !WEBHOOK_URL.isBlank()) {
-            if (!plugin.webhookTest(plugin, WEBHOOK_URL)) {
-                urls.add(WEBHOOK_URL);
-                plugin.getConfig().set("webhook_url", urls);
+            if (!plugin.webhookTest(WEBHOOK_URL)) {
+                url = WEBHOOK_URL;
+                plugin.getConfig().set("webhook_url", url);
                 plugin.saveConfig();
                 if (debug) {
                     plugin.getLogger().info("Debug: Discord Webhook url saved to config.yml");
                 }
             } else {
-                plugin.getLogger().severe("Webhook URL is invalid: " + urls);
+                plugin.getLogger().severe("Webhook URL is invalid: " + url);
                 failedToLoadConfig = true;
                 return;
             }
         } else {
-            urls = null;
+            url = null;
             failedToLoadConfig = true;
             return;
         }
 
         if (debug) {
-            plugin.getLogger().info("Debug: Discord Webhook is url set to: " + urls);
+            plugin.getLogger().info("Debug: Discord Webhook is url set to: " + url);
         }
 
         minLevel = plugin.parseLevel(plugin.getConfig().getString("min_level", "INFO"));

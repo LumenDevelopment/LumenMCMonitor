@@ -1,4 +1,7 @@
 # LumenMC Monitor
+
+[![Discord](https://badgen.net/discord/members/zUueFq98bB?icon=discord&label=Discord&list=what)](https://discord.gg/zUueFq98bB)
+
 ## Minecraft plugin that sends Discord Webhooks from your server!
 It's designed to work with [LumenMC](https://builtbybit.com/resources/lumenmc.52562/), but it works fine even without it.
 Basic and advanced configuration is available through ```config.yml```.
