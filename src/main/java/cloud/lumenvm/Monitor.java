@@ -167,7 +167,7 @@ public class Monitor extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onGamemodeChange(PlayerGameModeChangeEvent event) {
         for (Webhook webhook : webhooks) {
-            if (!webhook.confLoader.sendGamemodeChanges) return;
+            if (!webhook.confLoader.sendGamemodeChanges) continue;
             String name = event.getPlayer().getName();
             GameMode newMode = event.getNewGameMode();
             String content = "[" + Instant.now() + "] [GAMEMODE] " + name + " set own game mode to " + prettyMode(newMode);
@@ -178,7 +178,7 @@ public class Monitor extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onServerLoad(ServerLoadEvent event) {
         for (Webhook webhook : webhooks) {
-            if (!webhook.confLoader.sendServerLoad) return;
+            if (!webhook.confLoader.sendServerLoad) continue;
             if (webhook.confLoader.embedsStartStopEnabled) {
                 webhook.sendEmbed(langLoader.get("embed_start_title"), langLoader.get("embed_start_description"), Integer.parseInt(langLoader.get("embed_start_color")));
             } else {

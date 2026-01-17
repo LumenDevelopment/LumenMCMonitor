@@ -79,31 +79,31 @@ public class ConfigLoader {
             plugin.getLogger().info("Debug: Discord Webhook is url set to: " + url);
         }
 
-        minLevel = plugin.parseLevel(plugin.getConfig().getString("min_level", "INFO"));
-        ignorePatterns = plugin.getConfig().getStringList("ignore_patterns");
-        includeStackTraces = plugin.getConfig().getBoolean("include_stack_traces", true);
-        batchIntervalMs = plugin.getConfig().getInt("batch_interval_ms", 2000);
-        maxBatchSize = plugin.getConfig().getInt("max_batch_size", 50);
-        maxMessageLength = plugin.getConfig().getInt("max_message_length", 1900);
-        removeMentions = plugin.getConfig().getBoolean("remove_mentions", true);
-        captureSystemStreams = plugin.getConfig().getBoolean("capture_system_streams", true);
-        plugin.setLocale(plugin.getConfig().getString("locale", "en_US"));
-        enableLogs = plugin.getConfig().getBoolean("enable_logs", false);
+        minLevel = plugin.parseLevel(plugin.getConfig().getString("webhooks." + name + ".min_level", "INFO"));
+        ignorePatterns = plugin.getConfig().getStringList("webhooks." + name + ".ignore_patterns");
+        includeStackTraces = plugin.getConfig().getBoolean("webhooks." + name + ".include_stack_traces", true);
+        batchIntervalMs = plugin.getConfig().getInt("webhooks." + name + ".batch_interval_ms", 2000);
+        maxBatchSize = plugin.getConfig().getInt("webhooks." + name + ".max_batch_size", 50);
+        maxMessageLength = plugin.getConfig().getInt("webhooks." + name + ".max_message_length", 1900);
+        removeMentions = plugin.getConfig().getBoolean("webhooks." + name + ".remove_mentions", true);
+        captureSystemStreams = plugin.getConfig().getBoolean("webhooks." + name + ".capture_system_streams", true);
+        plugin.setLocale(plugin.getConfig().getString("webhooks." + name + ".locale", "en_US"));
+        enableLogs = plugin.getConfig().getBoolean("webhooks." + name + ".enable_logs", false);
 
-        sendChat = plugin.getConfig().getBoolean("send_chat", true);
-        sendPlayerCommands = plugin.getConfig().getBoolean("send_player_commands", true);
-        sendConsoleCommands = plugin.getConfig().getBoolean("send_console_commands", true);
-        sendUuidPrelogin = plugin.getConfig().getBoolean("send_uuid_prelogin", true);
-        sendJoinQuit = plugin.getConfig().getBoolean("send_join_quit", true);
-        sendDeaths = plugin.getConfig().getBoolean("send_deaths", true);
-        sendGamemodeChanges = plugin.getConfig().getBoolean("send_gamemode_changes", true);
-        sendServerLoad = plugin.getConfig().getBoolean("send_server_load", true);
+        sendChat = plugin.getConfig().getBoolean("webhooks." + name + ".send_chat", true);
+        sendPlayerCommands = plugin.getConfig().getBoolean("webhooks." + name + ".send_player_commands", true);
+        sendConsoleCommands = plugin.getConfig().getBoolean("webhooks." + name + ".send_console_commands", true);
+        sendUuidPrelogin = plugin.getConfig().getBoolean("webhooks." + name + ".send_uuid_prelogin", true);
+        sendJoinQuit = plugin.getConfig().getBoolean("webhooks." + name + ".send_join_quit", true);
+        sendDeaths = plugin.getConfig().getBoolean("webhooks." + name + ".send_deaths", true);
+        sendGamemodeChanges = plugin.getConfig().getBoolean("webhooks." + name + ".send_gamemode_changes", true);
+        sendServerLoad = plugin.getConfig().getBoolean("webhooks." + name + ".send_server_load", true);
 
-        embedsStartStopEnabled = plugin.getConfig().getBoolean("embeds_start_stop_enabled", true);
+        embedsStartStopEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".embeds_start_stop_enabled", true);
 
-        watchdogEnabled = plugin.getConfig().getBoolean("watchdog_enabled", true);
-        watchdogTimeoutMs = plugin.getConfig().getLong("watchdog_timeout_ms", 10000L);
-        watchdogCheckIntervalMs = plugin.getConfig().getLong("watchdog_check_interval_ms", 2000L);
+        watchdogEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".watchdog_enabled", true);
+        watchdogTimeoutMs = plugin.getConfig().getLong("webhooks." + name + ".watchdog_timeout_ms", 10000L);
+        watchdogCheckIntervalMs = plugin.getConfig().getLong("webhooks." + name + ".watchdog_check_interval_ms", 2000L);
         failedToLoadConfig = false;
     }
 }
