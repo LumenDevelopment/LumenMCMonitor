@@ -59,6 +59,7 @@ public class LanguageLoader {
             InputStream stream = plugin.getResource("en_US.yml");
             assert stream != null;
             FileUtils.copyInputStreamToFile(stream, defaultLanguageFile);
+            defaultTranslations = YamlConfiguration.loadConfiguration(defaultLanguageFile);
         } catch (IOException e){
             plugin.getLogger().severe("§cUnable to create default language file: " + e);
         }

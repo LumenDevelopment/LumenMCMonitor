@@ -2,6 +2,7 @@ package cloud.lumenvm;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
+import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 
 import java.io.PrintStream;
@@ -119,15 +120,14 @@ public class Webhook {
                 if (elapsedMs >= confLoader.watchdogTimeoutMs) {
                     if (!confLoader.watchdogAlerted) {
                         confLoader.watchdogAlerted = true;
-                        enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + plugin.langLoader.get("watchdog_alert_message"));
-                        if (plugin.debug)
-                            plugin.getLogger().warning("WATCHDOG alert: main thread stalled for " + elapsedMs + " ms");
+                        enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + PlaceholderAPI.setPlaceholders(null, plugin.langLoader.get("watchdog_alert_message")));
+                        if (plugin.debug) plugin.getLogger().warning("WATCHDOG alert: main thread stalled for " + elapsedMs + " ms");
                     }
                 } else {
                     // Restored
                     if (confLoader.watchdogAlerted) {
                         confLoader.watchdogAlerted = false;
-                        enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + plugin.langLoader.get("watchdog_recovery_message"));
+                        enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + PlaceholderAPI.setPlaceholders(null, plugin.langLoader.get("watchdog_recovery_message")));
                     }
                 }
             }, checkTicks, checkTicks).getTaskId();

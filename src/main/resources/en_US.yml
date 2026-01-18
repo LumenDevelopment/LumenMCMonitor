@@ -11,4 +11,10 @@ embed_stop_color: 15158332
 watchdog_alert_message: "⚠️ Server stopped ticking."
 watchdog_recovery_message: "✅ Server has recovered (ticking restored)."
 
-on_server_command: "[CMD] /%lumenmc_cmd%"
+on_server_command: "[CMD] %localtime_time% /%lumenmc_cmd%"
+on_player_command: "[CMD] %player_name%: %lumenmc_cmd%"
+on_player_chat: "[CHAT] <%player_name%> %lumenmc_msg%"
+on_join: "[JOIN] %player_name% joined the game!"
+on_quit: "[QUIT] %player_name% left the game!"
+on_death: "[DEATH] %lumenmc_deathmsg%"
+on_player_gamemode_change: "[GAMEMODE] %player_name% set own gamemode to %player_gamemode%"

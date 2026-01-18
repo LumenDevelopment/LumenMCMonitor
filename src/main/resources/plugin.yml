@@ -6,6 +6,8 @@ load: STARTUP
 authors: ["Lumen Development", "SNVK"]
 website: https://lumenvm.cloud/
 
+softdepend: ["PlaceholderAPI"]
+
 commands:
   lumenmc:
     description: Commands for LumenMC Monitor

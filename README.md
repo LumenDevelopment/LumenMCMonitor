@@ -29,6 +29,7 @@ Video
 5. Embeds
 6. Localization
 7. Multi webhook support
+8. PlaceholderAPI support
 
 ## Commands
 - /lumenmc reload - reloads config

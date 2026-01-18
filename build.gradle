@@ -10,6 +10,7 @@ repositories {
     maven {url 'https://oss.sonatype.org/content/repositories/snapshots' }
     maven {url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
     maven {url 'https://repo.extendedclip.com/releases/'}
+    maven {url 'https://repo.extendedclip.com/releases/'}
 }
 
 dependencies {
@@ -18,6 +19,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     compileOnly 'org.spigotmc:spigot-api:1.18-R0.1-SNAPSHOT'
     implementation 'commons-io:commons-io:2.21.0'
+    compileOnly 'me.clip:placeholderapi:2.11.7'
 }
 
 test {
