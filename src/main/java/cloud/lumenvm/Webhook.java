@@ -92,8 +92,7 @@ public class Webhook {
                     if (recentHashes.size() > DEDUPE_WINDOW) recentHashes.removeFirst();
                 }
 
-                if (shouldIgnore(msg)) return;
-                for (String chunk : Webhook.splitMessage(msg, confLoader.maxMessageLength)) {
+                for (String chunk : Webhook.splitMessage(filterMessage(msg), confLoader.maxMessageLength)) {
                     queue.offer(chunk);
                 }
             }
@@ -197,10 +196,8 @@ public class Webhook {
         if (confLoader.removeMentions) {
             content = content.replace("@everyone", "＠everyone").replace("@here", "＠here");
         }
-        if (!shouldIgnore(content)) {
-            for (String chunk : splitMessage(content, confLoader.maxMessageLength)) {
-                queue.offer(chunk);
-            }
+        for (String chunk : splitMessage(filterMessage(content), confLoader.maxMessageLength)) {
+            queue.offer(chunk);
         }
     }
 
@@ -320,14 +317,18 @@ public class Webhook {
         }
     }
 
-    public boolean shouldIgnore(String msg) {
-        if (msg == null || confLoader.ignorePatterns == null) return false;
+    public String filterMessage(String msg) {
+        if (msg == null || confLoader.ignorePatterns == null) return null;
         for (String pattern : confLoader.ignorePatterns) {
             if (pattern == null || pattern.isBlank()) continue;
-            try { if (msg.matches(pattern)) return true; }
+            try {
+                if (msg.contains(pattern)) {
+                    msg = msg.replace(pattern, "\\*\\*\\*\\*\\*");
+                }
+            }
             catch (Exception ignored) {}
         }
-        return false;
+        return msg;
     }
 
     public static List<String> splitMessage(String msg, int maxLen) {

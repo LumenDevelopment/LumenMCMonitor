@@ -140,7 +140,7 @@ public class Monitor extends JavaPlugin implements Listener {
             String cmd = event.getCommand();
             String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_server_command");
             if (isPapiEnabled) {
-                content = PlaceholderAPI.setPlaceholders(null, "local time: %localtime_time%");
+                content = PlaceholderAPI.setPlaceholders(null, content);
             }
             content = content.replace("%lumenmc_cmd%", cmd);
             webhook.enqueueIfAllowed(content);
