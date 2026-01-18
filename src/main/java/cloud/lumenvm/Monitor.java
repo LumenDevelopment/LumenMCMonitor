@@ -54,6 +54,8 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        Metrics metrics = new Metrics(this, 28902);
+
         ConfigurationSection webhooksSection = getConfig().getConfigurationSection("webhooks");
         if (webhooksSection != null) {
             Set<String> webhooksNames = webhooksSection.getKeys(false);
