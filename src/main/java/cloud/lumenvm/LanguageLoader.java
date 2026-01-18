@@ -3,7 +3,6 @@ package cloud.lumenvm;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +25,7 @@ public class LanguageLoader {
         if (!languageDirectory.isDirectory()) languageDirectory.mkdir();
 
         if (plugin.getConfig().getString("locale") != null && !plugin.getConfig().getString("locale", "en_US").equalsIgnoreCase("en_US")) {
-            if (Monitor.debug) plugin.getLogger().info("Debug: Loading custom language file: " + plugin.getConfig().getString("locale"));
+            if (plugin.debug) plugin.getLogger().info("Debug: Loading custom language file: " + plugin.getConfig().getString("locale"));
             customLanguageFile = new File(plugin.getDataFolder(), "languages/" + plugin.getConfig().getString("locale") + ".yml");
             if (!customLanguageFile.exists()) {
                 try {
@@ -39,7 +38,7 @@ public class LanguageLoader {
             }
             FileConfiguration translations = YamlConfiguration.loadConfiguration(customLanguageFile);
             if (translations.getKeys(true).equals(defaultTranslations.getKeys(true))) {
-                if (Monitor.debug) plugin.getLogger().info("Debug: Keys are the same...");
+                if (plugin.debug) plugin.getLogger().info("Debug: Keys are the same...");
                 for (String translation : translations.getKeys(true)){
                     translationMap.put(translation, translations.getString(translation));
                 }
@@ -50,16 +49,17 @@ public class LanguageLoader {
         } else {
             loadDefault(plugin);
         }
-        if (Monitor.debug) plugin.getLogger().info("Debug: Translation map: " + translationMap);
+        if (plugin.debug) plugin.getLogger().info("Debug: Translation map: " + translationMap);
     }
 
-    private void loadDefault(JavaPlugin plugin) {
-        if (Monitor.debug) plugin.getLogger().info("Debug: Loading default language file: en_US");
+    private void loadDefault(Monitor plugin) {
+        if (plugin.debug) plugin.getLogger().info("Debug: Loading default language file: en_US");
         if (defaultLanguageFile.exists()) defaultLanguageFile.delete();
         try {
             InputStream stream = plugin.getResource("en_US.yml");
             assert stream != null;
             FileUtils.copyInputStreamToFile(stream, defaultLanguageFile);
+            defaultTranslations = YamlConfiguration.loadConfiguration(defaultLanguageFile);
         } catch (IOException e){
             plugin.getLogger().severe("§cUnable to create default language file: " + e);
         }
@@ -75,7 +75,7 @@ public class LanguageLoader {
     // Returns response
     public String createLang(Monitor plugin, String langName) {
         langName.toLowerCase();
-        if (Monitor.debug) plugin.getLogger().info("Debug: Creating custom language file: " + langName);
+        if (plugin.debug) plugin.getLogger().info("Debug: Creating custom language file: " + langName);
         customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
         if (!customLanguageFile.exists()) {
             try {
@@ -92,7 +92,7 @@ public class LanguageLoader {
             plugin.getConfig().set("locale", langName);
             plugin.saveConfig();
             plugin.reloadConfig();
-            plugin.readConfig();
+            plugin.pluginReload();
             return "§aCustom language created and it's being used right now!";
         } else {
             return "§cLanguage already exists";
@@ -101,14 +101,14 @@ public class LanguageLoader {
 
     public String removeLang(Monitor plugin, String langName) {
         langName.toLowerCase();
-        if (Monitor.debug) plugin.getLogger().info("Debug: Removing custom language file " + langName);
+        if (plugin.debug) plugin.getLogger().info("Debug: Removing custom language file " + langName);
         customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
         if (customLanguageFile.exists()) {
             customLanguageFile.delete();
             plugin.getConfig().set("locale", "en_US");
             plugin.saveConfig();
             plugin.reloadConfig();
-            plugin.readConfig();
+            plugin.pluginReload();
             return "§aRemoved language file " + langName + " and using default";
         } else {
             return "§cLanguage file doesn't exist";
@@ -118,14 +118,16 @@ public class LanguageLoader {
     public String setLang(Monitor plugin, String langName) {
         langName.toLowerCase();
         customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
-        if (Monitor.debug) plugin.getLogger().info("Debug: Setting language file " + customLanguageFile.getName());
+        if (plugin.debug) plugin.getLogger().info("Debug: Setting language file " + customLanguageFile.getName());
         if (customLanguageFile.exists()) {
             plugin.getConfig().set("locale", langName);
             plugin.saveConfig();
             plugin.reloadConfig();
-            plugin.readConfig();
-            if (Monitor.getLocale().equalsIgnoreCase("en_US")) {
+            plugin.pluginReload();
+            if (plugin.getLocale().equalsIgnoreCase("en_US") && langName.equalsIgnoreCase("en_US")) {
                 return "§aSet to default language";
+            } else if (plugin.getLocale().equalsIgnoreCase("en_US") && !langName.equalsIgnoreCase("en_US")) {
+                return "§cThis language file is corrupted, set to default";
             }
             return "§aLanguage set successfully";
         } else {
@@ -151,7 +153,7 @@ public class LanguageLoader {
                 translations.save(customLanguageFile);
                 plugin.saveConfig();
                 plugin.reloadConfig();
-                plugin.readConfig();
+                plugin.pluginReload();
                 return "Successfully edited " + locale;
             } else {
                 return "Language file doesn't exist";
