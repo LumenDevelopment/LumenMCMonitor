@@ -379,43 +379,40 @@ public class Monitor extends JavaPlugin implements Listener {
         }
 
         if (args[0].equalsIgnoreCase("webhook")) {
-            List<String> urls = new ArrayList<>();
-            for (Webhook webhook : webhooks) {
-                urls.add(webhook.confLoader.url);
-            }
+            List<?> webhooksNames = Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList();
             if (args.length == 1) {
                 sender.sendMessage("Use: /lumenmc webhook add|remove");
                 return true;
             }
             if (args[1].equalsIgnoreCase("add")) {
-                if (args.length == 2) {
-                    sender.sendMessage("Use: /lumenmc webhook add [webhookUrl]");
+                if (args.length == 2 || args.length == 3) {
+                    sender.sendMessage("Use: /lumenmc webhook add [webhookName] [webhookUrl]");
                     return true;
                 }
-                if (webhookTest(args[2])) {
-                    urls.add(args[2]);
+                if (webhookTest(args[3])) {
+                    Webhook.addWebhook(args[2], args[3]);
                     saveConfig();
                     reloadConfig();
                     pluginReload();
-                    sender.sendMessage("§aSet webhook url to: " + args[2]);
+                    sender.sendMessage("§aAdded webhook: §r" + args[2] + "§awith url: §r" + args[3]);
                 } else {
-                    sender.sendMessage("§cInvalid webhook url: " + args[1]);
+                    sender.sendMessage("§cInvalid webhook url: " + args[3]);
                 }
                 return true;
             }
             if (args[1].equalsIgnoreCase("remove")) {
                 if (args.length == 2) {
-                    sender.sendMessage("Use: /lumenmc webhook remove [webhookUrl]");
+                    sender.sendMessage("Use: /lumenmc webhook remove [webhookName]");
                     return true;
                 }
-                if (urls.contains(args[2]) && webhookTest(args[2])) {
-                    urls.remove(args[2]);
+                if (webhooksNames.contains(args[2])) {
+                    Webhook.removeWebhook(args[2]);
                     saveConfig();
                     reloadConfig();
                     pluginReload();
-                    sender.sendMessage("§aRemoved webhook url: " + args[2]);
+                    sender.sendMessage("§aRemoved webhook: " + args[2]);
                 } else {
-                    sender.sendMessage("§cInvalid webhook url: " + args[2]);
+                    sender.sendMessage("§cInvalid name url: " + args[2]);
                 }
                 return true;
             }
@@ -440,12 +437,9 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("remove");
             return list;
         }
-        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook") && args[1].equalsIgnoreCase("remove")) {
-            List<String> urls = new ArrayList<>();
-            for (Webhook webhook : webhooks) {
-                urls.add(webhook.confLoader.url);
-            }
-            return urls;
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook")) {
+            list = Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList();;
+            return list;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("lang")) {
             list.add("create");
@@ -456,7 +450,7 @@ public class Monitor extends JavaPlugin implements Listener {
             list.sort(null);
             return list;
         }
-        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("lang") && args[1].equalsIgnoreCase("set") || args[1].equalsIgnoreCase("remove")) {
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("lang") && args[1].equalsIgnoreCase("set")) {
             list = langLoader.listLang();
             list.sort(null);
             return list;

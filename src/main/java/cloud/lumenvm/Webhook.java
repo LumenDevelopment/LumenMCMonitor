@@ -4,10 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.YamlConfiguration;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -439,6 +438,26 @@ public class Webhook {
             Bukkit.getScheduler().cancelTask(watchdogCheckerTaskId);
             watchdogCheckerTaskId = -1;
         }
+    }
+
+    public static void addWebhook(String name, String url) {
+        InputStreamReader stream = new InputStreamReader(Objects.requireNonNull(plugin.getResource("webhookTemplate.yml")));
+        YamlConfiguration template = YamlConfiguration.loadConfiguration(stream);
+
+        if (plugin.getConfig().getKeys(true).contains(name)) {
+            return;
+        }
+
+        for (String key : template.getKeys(true)) {
+            Object value = template.get(key);
+            plugin.getConfig().set("webhooks." + name.toLowerCase().replace(" ", "") + "." + key, value);
+        }
+
+        plugin.getConfig().set("webhooks." + name.toLowerCase().replace(" ", "") + ".url", url);
+    }
+
+    public static void removeWebhook(String name) {
+        plugin.getConfig().set("webhooks." + name, null);
     }
 
     // Content-only payload

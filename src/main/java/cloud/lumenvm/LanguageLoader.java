@@ -124,8 +124,10 @@ public class LanguageLoader {
             plugin.saveConfig();
             plugin.reloadConfig();
             plugin.pluginReload();
-            if (plugin.getLocale().equalsIgnoreCase("en_US")) {
+            if (plugin.getLocale().equalsIgnoreCase("en_US") && langName.equalsIgnoreCase("en_US")) {
                 return "§aSet to default language";
+            } else if (plugin.getLocale().equalsIgnoreCase("en_US") && !langName.equalsIgnoreCase("en_US")) {
+                return "§cThis language file is corrupted, set to default";
             }
             return "§aLanguage set successfully";
         } else {
