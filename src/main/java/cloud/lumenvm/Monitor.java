@@ -405,6 +405,10 @@ public class Monitor extends JavaPlugin implements Listener {
                     sender.sendMessage("Use: /lumenmc webhook remove [webhookName]");
                     return true;
                 }
+                if (args[2].equalsIgnoreCase("default")) {
+                    sender.sendMessage("§cYou can't remove default!");
+                    return true;
+                }
                 if (webhooksNames.contains(args[2])) {
                     Webhook.removeWebhook(args[2]);
                     saveConfig();
@@ -437,7 +441,7 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("remove");
             return list;
         }
-        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook")) {
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook") && args[1].equalsIgnoreCase("remove")) {
             list = Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList();;
             return list;
         }
@@ -450,7 +454,7 @@ public class Monitor extends JavaPlugin implements Listener {
             list.sort(null);
             return list;
         }
-        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("lang") && args[1].equalsIgnoreCase("set")) {
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("lang") && (args[1].equalsIgnoreCase("set") || args[1].equalsIgnoreCase("remove"))) {
             list = langLoader.listLang();
             list.sort(null);
             return list;
