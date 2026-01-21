@@ -27,11 +27,9 @@ public class Webhook {
     private static Monitor plugin;
     public final ConfigLoader confLoader;
     public static HttpClient httpClient;
-    private URI webhookUri;
-    private final AtomicBoolean drainLock = new AtomicBoolean(false);
-    private final Gson gson = new Gson();
+    static final AtomicBoolean drainLock = new AtomicBoolean(false);
+    private static final Gson gson = new Gson();
 
-    private int taskId = -1;
 
     public int watchdogHeartbeatTaskId = -1;
     public int watchdogCheckerTaskId = -1;
@@ -62,16 +60,6 @@ public class Webhook {
             plugin.getServer().getPluginManager().disablePlugin(plugin);
             return;
         }
-
-        webhookUri = URI.create(confLoader.url);
-        int ticks = msToTicks(confLoader.batchIntervalMs);
-        taskId = Bukkit.getScheduler()
-                .runTaskTimerAsynchronously(plugin, this::drainAndSend, ticks, ticks)
-                .getTaskId();
-
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, this::drainAndSend);
-
-        if (confLoader.debug) plugin.getLogger().info("Debug: Sending activated (interval " + confLoader.batchIntervalMs + " ms / " + ticks + " ticks).");
 
         if (confLoader.captureSystemStreams) attachSystemStreamsTEE();
 
@@ -200,37 +188,7 @@ public class Webhook {
         }
     }
 
-    public void drainAndSend() {
-
-        // Anti-double-drain lock
-        if (!drainLock.compareAndSet(false, true)) {
-            return;
-        }
-        try {
-            List<String> batch = new ArrayList<>(confLoader.maxBatchSize);
-            while (batch.size() < confLoader.maxBatchSize) {
-                String item = queue.poll();
-                if (item == null) break;
-                batch.add(item);
-            }
-            if (batch.isEmpty()) return;
-
-            String combined = String.join("\n", batch);
-            List<String> payloads = splitMessage(combined, confLoader.maxMessageLength);
-
-            if (confLoader.debug) plugin.getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
-
-            for (String content : payloads) {
-                sendContent(content, webhookUri);
-                try { Thread.sleep(250); }
-                catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
-            }
-        } finally {
-            drainLock.set(false);
-        }
-    }
-
-    private void sendContent(String content, URI webhookUri) {
+    static void sendContent(String content, URI webhookUri) {
         try {
             WebhookContentPayload payload = new WebhookContentPayload(content);
             payload.username = "LumenMC";
@@ -246,7 +204,7 @@ public class Webhook {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             int status = response.statusCode();
 
-            if (confLoader.debug) {
+            if (plugin.debug) {
                 plugin.getLogger().info("Debug: Webhook HTTP " + status +
                         (response.body() != null ? (" body: " + response.body()) : ""));
             }
@@ -299,6 +257,13 @@ public class Webhook {
             if (confLoader.debug) {
                 plugin.getLogger().info("Debug: Sending embed to Discord \n" + json);
             }
+            URI webhookUri;
+            try {
+                webhookUri = URI.create(confLoader.url);
+            } catch (Exception e) {
+                plugin.getLogger().severe("Invalid url when sending embed");
+                return;
+            }
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(webhookUri)
@@ -347,7 +312,7 @@ public class Webhook {
         Webhook.plugin = plugin;
     }
 
-    private int msToTicks(int ms) {
+    public static int msToTicks(int ms) {
         int ticks = (int) Math.ceil(ms / 50.0);
         return Math.max(1, ticks);
     }
@@ -426,9 +391,9 @@ public class Webhook {
     public void endTask() {
         detachSystemStreamsTEE();
         detachHandlers();
-        Bukkit.getScheduler().cancelTask(taskId);
-        plugin.getLogger().info("Canceled task " + taskId);
-        taskId = -1;
+        Bukkit.getScheduler().cancelTask(plugin.taskId);
+        plugin.getLogger().info("Canceled task " + plugin.taskId);
+        plugin.taskId = -1;
 
         if (watchdogHeartbeatTaskId != -1) {
             Bukkit.getScheduler().cancelTask(watchdogHeartbeatTaskId);

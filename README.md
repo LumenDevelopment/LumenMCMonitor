@@ -45,7 +45,7 @@ Video
     - remove - removes webhook
 
 ## License
-We're using GPL
+We're using GNU GENERAL PUBLIC LICENSE v3
 
 ## Links
 

@@ -53,9 +53,6 @@ watchdog_check_interval_ms: 2000
 # Filters
 ignore_patterns: [ ]
 
-# How often to send a batch (in ms)
-batch_interval_ms: 2000
-
 # Maximum amount of messages in one batch
 max_batch_size: 50
 

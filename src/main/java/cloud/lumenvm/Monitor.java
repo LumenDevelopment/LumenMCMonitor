@@ -18,6 +18,7 @@ import me.clip.placeholderapi.PlaceholderAPI;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -35,8 +36,9 @@ public class Monitor extends JavaPlugin implements Listener {
     private static HttpClient httpClient;
     private boolean reloading = false;
     public boolean debug;
-    List<Webhook> webhooks;
+    public List<Webhook> webhooks;
     private boolean isPapiEnabled;
+    int taskId = -1;
 
 
     @Override
@@ -73,6 +75,14 @@ public class Monitor extends JavaPlugin implements Listener {
             }
         }
 
+        int ticks = Webhook.msToTicks(getConfig().getInt("batch_interval_ms"));
+
+        taskId = Bukkit.getScheduler()
+                .runTaskTimerAsynchronously(this, this::drainAndSend, ticks, ticks)
+                .getTaskId();
+
+        Bukkit.getScheduler().runTaskAsynchronously(this, this::drainAndSend);
+
         // Register events
         if (!reloading) {
             getServer().getPluginManager().registerEvents(this, this);
@@ -93,9 +103,7 @@ public class Monitor extends JavaPlugin implements Listener {
                 webhook.endTask();
             }
 
-            for (Webhook webhook : webhooks) {
-                webhook.drainAndSend();
-            }
+            drainAndSend();
         }
     }
 
@@ -465,6 +473,45 @@ public class Monitor extends JavaPlugin implements Listener {
             return langLoader.getKeys();
         }
         return list;
+    }
+
+    public void drainAndSend() {
+        // Anti-double-drain lock
+        if (!Webhook.drainLock.compareAndSet(false, true)) {
+            return;
+        }
+        for (Webhook webhook : webhooks) {
+            try {
+                List<String> batch = new ArrayList<>(webhook.confLoader.maxBatchSize);
+                while (batch.size() < webhook.confLoader.maxBatchSize) {
+                    String item = webhook.queue.poll();
+                    if (item == null) break;
+                    batch.add(item);
+                }
+                if (batch.isEmpty()) return;
+
+                String combined = String.join("\n", batch);
+                List<String> payloads = Webhook.splitMessage(combined, webhook.confLoader.maxMessageLength);
+
+                if (debug)
+                    getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
+
+                for (String content : payloads) {
+                    URI webhookUri = new URI(webhook.confLoader.url);
+                    Webhook.sendContent(content, webhookUri);
+                    try {
+                        Thread.sleep(250);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            } catch (URISyntaxException e) {
+                getLogger().severe("Invalid url when trying to send: " + e);
+            } finally {
+                Webhook.drainLock.set(false);
+            }
+        }
     }
 
     // Config
