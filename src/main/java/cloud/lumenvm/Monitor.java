@@ -254,6 +254,8 @@ public class Monitor extends JavaPlugin implements Listener {
         if (args.length == 0) {
             return false;
         }
+        List<String> webhooksNames = Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList();
+
 
         if (args[0].equalsIgnoreCase("test")) {
             String content = "🔧 LumenMC test message in " + getDescription().getVersion() +
@@ -266,12 +268,7 @@ public class Monitor extends JavaPlugin implements Listener {
         }
 
         if (args[0].equalsIgnoreCase("reload")) {
-            reloading = true;
-            onDisable();
-            onLoad();
-            onEnable();
-            sender.sendMessage("§aReloaded...");
-            reloading = false;
+            pluginReload();
             return true;
         }
 
@@ -386,7 +383,6 @@ public class Monitor extends JavaPlugin implements Listener {
         }
 
         if (args[0].equalsIgnoreCase("webhook")) {
-            List<String> webhooksNames = Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList();
             if (args.length == 1) {
                 sender.sendMessage("Use: /lumenmc webhook add|remove");
                 return true;
@@ -435,6 +431,27 @@ public class Monitor extends JavaPlugin implements Listener {
             }
         }
 
+        if (args[0].equalsIgnoreCase("config")) {
+            if (args.length == 1) {
+                sender.sendMessage("Use: /lumenmc config [configPath] [value]");
+                return true;
+            }
+            if (getConfig().getKeys(true).contains(args[1])) {
+                if (args.length == 2) {
+                    sender.sendMessage("§aThe value of §r" + args[1] + " §ais §r" + Objects.requireNonNull(getConfig().get(args[1])));
+                    return true;
+                }
+                if (args.length == 3) {
+                    getConfig().set(args[1], args[2]);
+                    saveConfig();
+                    pluginReload();
+                    sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                    return true;
+                }
+                sender.sendMessage("Use: /lumenmc config [configPath] [value]");
+                return true;
+            }
+        }
         return false;
     }
 
@@ -459,6 +476,10 @@ public class Monitor extends JavaPlugin implements Listener {
             List<String> webhooksNames = new ArrayList<>(Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList());
             webhooksNames.remove("default");
             return webhooksNames;
+        }
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("config")) {
+            list = getConfig().getKeys(true).stream().toList();
+            return list;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("lang")) {
             list.add("create");
