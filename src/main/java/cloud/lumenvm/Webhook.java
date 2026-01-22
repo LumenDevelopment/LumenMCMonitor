@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -29,6 +30,7 @@ public class Webhook {
     public static HttpClient httpClient;
     static final AtomicBoolean drainLock = new AtomicBoolean(false);
     private static final Gson gson = new Gson();
+    private static int taskId = -1;
 
 
     public int watchdogHeartbeatTaskId = -1;
@@ -295,6 +297,45 @@ public class Webhook {
         return msg;
     }
 
+    public static void drainAndSend() {
+        // Anti-double-drain lock
+        if (!drainLock.compareAndSet(false, true)) {
+            return;
+        }
+        for (Webhook webhook : plugin.webhooks) {
+            try {
+                List<String> batch = new ArrayList<>(webhook.confLoader.maxBatchSize);
+                while (batch.size() < webhook.confLoader.maxBatchSize) {
+                    String item = webhook.queue.poll();
+                    if (item == null) break;
+                    batch.add(item);
+                }
+                if (batch.isEmpty()) return;
+
+                String combined = String.join("\n", batch);
+                List<String> payloads =  splitMessage(combined, webhook.confLoader.maxMessageLength);
+
+                if (plugin.debug)
+                    plugin.getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
+
+                for (String content : payloads) {
+                    URI webhookUri = new URI(webhook.confLoader.url);
+                    sendContent(content, webhookUri);
+                    try {
+                        Thread.sleep(250);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            } catch (URISyntaxException e) {
+                plugin.getLogger().severe("Invalid url when trying to send: " + e);
+            } finally {
+                drainLock.set(false);
+            }
+        }
+    }
+
     public static List<String> splitMessage(String msg, int maxLen) {
         List<String> parts = new ArrayList<>();
         if (msg == null) return parts;
@@ -388,12 +429,25 @@ public class Webhook {
         handlersAttached = false;
     }
 
-    public void endTask() {
+    public static void startTask() {
+        int ticks = Webhook.msToTicks(plugin.getConfig().getInt("batch_interval_ms"));
+
+        taskId = Bukkit.getScheduler()
+                .runTaskTimerAsynchronously(plugin, Webhook::drainAndSend, ticks, ticks)
+                .getTaskId();
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, Webhook::drainAndSend);
+    }
+
+    public static void endTask() {
+        Bukkit.getScheduler().cancelTask(taskId);
+        plugin.getLogger().info("Canceled task " + taskId);
+        taskId = -1;
+    }
+
+    public void removeAllWebhooks() {
         detachSystemStreamsTEE();
         detachHandlers();
-        Bukkit.getScheduler().cancelTask(plugin.taskId);
-        plugin.getLogger().info("Canceled task " + plugin.taskId);
-        plugin.taskId = -1;
 
         if (watchdogHeartbeatTaskId != -1) {
             Bukkit.getScheduler().cancelTask(watchdogHeartbeatTaskId);

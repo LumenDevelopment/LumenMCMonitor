@@ -27,6 +27,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.logging.Filter;
 import java.util.logging.Level;
 
 @SuppressWarnings("FieldCanBeLocal")
@@ -38,7 +40,6 @@ public class Monitor extends JavaPlugin implements Listener {
     public boolean debug;
     public List<Webhook> webhooks;
     private boolean isPapiEnabled;
-    int taskId = -1;
 
 
     @Override
@@ -75,13 +76,7 @@ public class Monitor extends JavaPlugin implements Listener {
             }
         }
 
-        int ticks = Webhook.msToTicks(getConfig().getInt("batch_interval_ms"));
-
-        taskId = Bukkit.getScheduler()
-                .runTaskTimerAsynchronously(this, this::drainAndSend, ticks, ticks)
-                .getTaskId();
-
-        Bukkit.getScheduler().runTaskAsynchronously(this, this::drainAndSend);
+        Webhook.startTask();
 
         // Register events
         if (!reloading) {
@@ -100,10 +95,12 @@ public class Monitor extends JavaPlugin implements Listener {
                 }
             }
             for (Webhook webhook : webhooks) {
-                webhook.endTask();
+                webhook.removeAllWebhooks();
             }
 
-            drainAndSend();
+            Webhook.endTask();
+
+            Webhook.drainAndSend();
         }
     }
 
@@ -389,7 +386,7 @@ public class Monitor extends JavaPlugin implements Listener {
         }
 
         if (args[0].equalsIgnoreCase("webhook")) {
-            List<?> webhooksNames = Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList();
+            List<String> webhooksNames = Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList();
             if (args.length == 1) {
                 sender.sendMessage("Use: /lumenmc webhook add|remove");
                 return true;
@@ -404,7 +401,7 @@ public class Monitor extends JavaPlugin implements Listener {
                     saveConfig();
                     reloadConfig();
                     pluginReload();
-                    sender.sendMessage("§aAdded webhook: §r" + args[2] + "§awith url: §r" + args[3]);
+                    sender.sendMessage("§aAdded webhook: §r" + args[2] + " §awith url: §r" + args[3]);
                 } else {
                     sender.sendMessage("§cInvalid webhook url: " + args[3]);
                 }
@@ -424,9 +421,15 @@ public class Monitor extends JavaPlugin implements Listener {
                     saveConfig();
                     reloadConfig();
                     pluginReload();
-                    sender.sendMessage("§aRemoved webhook: " + args[2]);
+                    sender.sendMessage("§aRemoved webhook: §r" + args[2]);
                 } else {
                     sender.sendMessage("§cInvalid name url: " + args[2]);
+                }
+                return true;
+            }
+            if (args[1].equalsIgnoreCase("list")) {
+                for (int i = 0; i < webhooksNames.size(); i++) {
+                    sender.sendMessage("[§a" + (i + 1) + "§r.] " + webhooksNames.get(i));
                 }
                 return true;
             }
@@ -449,11 +452,13 @@ public class Monitor extends JavaPlugin implements Listener {
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("webhook")) {
             list.add("add");
             list.add("remove");
+            list.add("list");
             return list;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook") && args[1].equalsIgnoreCase("remove")) {
-            list = Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList();;
-            return list;
+            List<String> webhooksNames = new ArrayList<>(Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList());
+            webhooksNames.remove("default");
+            return webhooksNames;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("lang")) {
             list.add("create");
@@ -473,45 +478,6 @@ public class Monitor extends JavaPlugin implements Listener {
             return langLoader.getKeys();
         }
         return list;
-    }
-
-    public void drainAndSend() {
-        // Anti-double-drain lock
-        if (!Webhook.drainLock.compareAndSet(false, true)) {
-            return;
-        }
-        for (Webhook webhook : webhooks) {
-            try {
-                List<String> batch = new ArrayList<>(webhook.confLoader.maxBatchSize);
-                while (batch.size() < webhook.confLoader.maxBatchSize) {
-                    String item = webhook.queue.poll();
-                    if (item == null) break;
-                    batch.add(item);
-                }
-                if (batch.isEmpty()) return;
-
-                String combined = String.join("\n", batch);
-                List<String> payloads = Webhook.splitMessage(combined, webhook.confLoader.maxMessageLength);
-
-                if (debug)
-                    getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
-
-                for (String content : payloads) {
-                    URI webhookUri = new URI(webhook.confLoader.url);
-                    Webhook.sendContent(content, webhookUri);
-                    try {
-                        Thread.sleep(250);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                }
-            } catch (URISyntaxException e) {
-                getLogger().severe("Invalid url when trying to send: " + e);
-            } finally {
-                Webhook.drainLock.set(false);
-            }
-        }
     }
 
     // Config
