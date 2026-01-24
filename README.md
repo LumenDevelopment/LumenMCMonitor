@@ -9,10 +9,10 @@ It sends everything from server startup, player chats, commands to death message
 It even notifies you when the server stops ticking!
 
 > ⚠️ Warning
-><br>The plugin is in an alpha stage of development. You may experience bugs.
+><br>The plugin is in a beta stage of development. You may experience bugs.
 
 ## Showcase
-Video
+
 
 ## Features
 1. Can send messages:
@@ -40,15 +40,20 @@ Video
     - remove - removes existing language
     - list - lists available languages
     - set - sets language
-- /lumenmc webhook
+- /lumenmc webhook - manages webhooks
     - add - adds webhook
     - remove - removes webhook
+- /lumenmc config - edits config
 
 ## License
-We're using GNU GENERAL PUBLIC LICENSE v3
+We're using [GNU GENERAL PUBLIC LICENSE v3](LICENSE)
+
+## Contributing
+Pull requests are welcome.
+ANY feedback appreciated.
+If you find issues you can open new issue here or open a ticket at our discord.
 
 ## Links
-
 - <a href="https://www.lumenvm.cloud/" target="_blank">Lumen Website</a>
 - <a href="https://discord.gg/zUueFq98bB/" target="_blank">Lumen Development Discord</a>
 - Modrinth page (Coming soon)
