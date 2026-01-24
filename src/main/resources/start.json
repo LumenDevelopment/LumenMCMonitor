@@ -1,0 +1,37 @@
+{
+  "username":"LumenMC",
+  "avatar_url":"https://cdn.lumenvm.cloud/logo.png",
+  "embeds":[
+    {
+      "image":{"url":"https://cdn.lumenvm.cloud/lumenmc-banner.png"},
+      "title":"\uD83D\uDFE6 Server start",
+      "description":"✅ Startup complete.",
+      "color":3447003,
+      "timestamp":"%lumenmc_timestamp%",
+      "footer": {
+        "text":"LumenMC Monitor a1.4 | %lumenmc_timestamp%"
+      },
+      "fields":[
+        {
+          "name":"Time Zone","value":"Europe/Prague",
+          "inline":true
+        },
+        {
+          "name":"Server Memory",
+          "value":"-2048.0MB",
+          "inline":true
+        },
+        {
+          "name":"Server Version",
+          "value":"1.21.11-88-8556cb4 (MC: 1.21.11)"
+        ,"inline":true
+        },
+        {
+          "name":"Number of Plugins",
+          "value":"2",
+          "inline":true
+        }
+      ]
+    }
+  ]
+}

@@ -2,11 +2,10 @@ name: 'LumenMCMonitor'
 version: 'a1.4'
 main: cloud.lumenvm.Monitor
 api-version: '1.18'
-load: STARTUP
 authors: ["Lumen Development", "SNVK"]
 website: https://lumenvm.cloud/
 
-softdepend: ["PlaceholderAPI"]
+depend: ["PlaceholderAPI"]
 
 commands:
   lumenmc:

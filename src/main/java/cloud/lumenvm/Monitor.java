@@ -18,7 +18,6 @@ import me.clip.placeholderapi.PlaceholderAPI;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -27,11 +26,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
-import java.util.function.Predicate;
-import java.util.logging.Filter;
 import java.util.logging.Level;
 
-@SuppressWarnings("FieldCanBeLocal")
 public class Monitor extends JavaPlugin implements Listener {
     LanguageLoader langLoader;
     private String locale;
@@ -52,12 +48,22 @@ public class Monitor extends JavaPlugin implements Listener {
         langLoader = new LanguageLoader(this);
 
         Webhook.setPlugin(this);
+        EmbedLoader.setPlugin(this);
         webhooks = new ArrayList<>();
     }
 
     @Override
     public void onEnable() {
-        Metrics metrics = new Metrics(this, 28902);
+        new Metrics(this, 28902);
+
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            if (debug) getLogger().info("Debug: PlaceholderAPI detected");
+            new PapiExpansion(this).register();
+            isPapiEnabled = true;
+        } else {
+            isPapiEnabled = false;
+            Bukkit.getPluginManager().disablePlugin(this);
+        }
 
         ConfigurationSection webhooksSection = getConfig().getConfigurationSection("webhooks");
         if (webhooksSection != null) {
@@ -219,16 +225,13 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onServerLoad(ServerLoadEvent event) {
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            if (debug) getLogger().info("Debug: PlaceholderAPI detected");
-            isPapiEnabled = true;
-        } else isPapiEnabled = false;
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendServerLoad) continue;
             if (webhook.confLoader.embedsStartStopEnabled) {
-                String embedStartTitle = PlaceholderAPI.setPlaceholders(null, langLoader.get("embed_start_title"));
-                String embedStartDescription = PlaceholderAPI.setPlaceholders(null, langLoader.get("embed_start_description"));
-                webhook.sendEmbed(embedStartTitle, embedStartDescription, Integer.parseInt(langLoader.get("embed_start_color")));
+//                String embedStartTitle = PlaceholderAPI.setPlaceholders(null, langLoader.get("embed_start_title"));
+//                String embedStartDescription = PlaceholderAPI.setPlaceholders(null, langLoader.get("embed_start_description"));
+//                webhook.sendEmbed(embedStartTitle, embedStartDescription, Integer.parseInt(langLoader.get("embed_start_color")));
+                webhook.sendStart();
             } else {
                 String content = "[" + Instant.now() + "] [SERVER] Startup complete. For help, type \"help\"";
                 webhook.enqueueIfAllowed(content);

@@ -219,6 +219,38 @@ public class Webhook {
         }
     }
 
+    public void sendStart() {
+        EmbedLoader embedLoader = new EmbedLoader();
+        try {
+            URI webhookUri;
+            try {
+                webhookUri = URI.create(confLoader.url);
+            } catch (Exception e) {
+                plugin.getLogger().severe("Invalid url when sending embed");
+                return;
+            }
+
+            String json = embedLoader.start;
+
+            if (confLoader.debug) {
+                plugin.getLogger().info("Debug: Sending embed to Discord \n" + json);
+            }
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(webhookUri)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (confLoader.debug) {
+                plugin.getLogger().info("Debug: Webhook embed sent: HTTP " + response.statusCode());
+                plugin.getLogger().info("Debug: Response body: " + response.body());
+            }
+        } catch (IOException | InterruptedException e) {
+            plugin.getLogger().warning("Error when sending embed to Discord: " + e);
+        }
+    }
+
     public void sendEmbed(String title, String description, int color) {
         try {
             Embed embed = new Embed();
@@ -232,7 +264,7 @@ public class Webhook {
             if (confLoader.P_SERVER_LOCATION != null && !confLoader.P_SERVER_LOCATION.isBlank() && confLoader.P_SERVER_UUID != null && !confLoader.P_SERVER_UUID.isBlank()) {
                 embed.fields = Arrays.asList(
                         new Field("Time Zone", confLoader.TZ, true),
-                        new Field("Server Memory", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
+                        new Field("Server Memory", (int) ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
                         new Field("Server IP", confLoader.SERVER_IP, true),
                         new Field("Server Port", confLoader.SERVER_PORT, true),
                         new Field("Server Location", confLoader.P_SERVER_LOCATION, true),
@@ -243,7 +275,7 @@ public class Webhook {
             } else {
                 embed.fields = Arrays.asList(
                         new Field("Time Zone", TimeZone.getDefault().getID(), true),
-                        new Field("Server Memory", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
+                        new Field("Server Memory", (int) ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
                         new Field("Server Version", plugin.getServer().getVersion(), true),
                         new Field("Number of Plugins", String.valueOf(plugin.getServer().getPluginManager().getPlugins().length), true)
                 );

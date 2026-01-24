@@ -61,7 +61,7 @@ public class LanguageLoader {
             FileUtils.copyInputStreamToFile(stream, defaultLanguageFile);
             defaultTranslations = YamlConfiguration.loadConfiguration(defaultLanguageFile);
         } catch (IOException e){
-            plugin.getLogger().severe("§cUnable to create default language file: " + e);
+            plugin.getLogger().severe("Unable to create default language file: " + e);
         }
         for (String translation : defaultTranslations.getKeys(false)){
             translationMap.put(translation, defaultTranslations.getString(translation));
