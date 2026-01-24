@@ -1,5 +1,7 @@
 # LumenMC Monitor
 
+<img src="./images/icon.svg" width="100px" height="100px" alt="Icon">
+
 [![Discord](https://badgen.net/discord/members/zUueFq98bB?icon=discord&label=Discord&list=what)](https://discord.gg/zUueFq98bB)
 
 ## Minecraft plugin that sends Discord Webhooks from your server!
@@ -56,4 +58,4 @@ If you find issues you can open new issue here or open a ticket at our discord.
 ## Links
 - <a href="https://www.lumenvm.cloud/" target="_blank">Lumen Website</a>
 - <a href="https://discord.gg/zUueFq98bB/" target="_blank">Lumen Development Discord</a>
-- Modrinth page (Coming soon)
+- <a href="https://modrinth.com/plugin/lumenmc-monitor" target="_blank">Modrinth page</a>
