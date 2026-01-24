@@ -7,14 +7,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.*;
-import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -193,8 +191,8 @@ public class Webhook {
     static void sendContent(String content, URI webhookUri) {
         try {
             WebhookContentPayload payload = new WebhookContentPayload(content);
-            payload.username = "LumenMC";
-            payload.avatar_url = "https://cdn.lumenvm.cloud/logo.png";
+            payload.username = plugin.getConfig().getString("username", "LumenMC");
+            payload.avatar_url = plugin.getConfig().getString("avatar_url", "https://cdn.lumenvm.cloud/logo.png");
             String json = gson.toJson(payload);
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -219,8 +217,7 @@ public class Webhook {
         }
     }
 
-    public void sendStart() {
-        EmbedLoader embedLoader = new EmbedLoader();
+    public void sendJson(String json) {
         try {
             URI webhookUri;
             try {
@@ -229,8 +226,6 @@ public class Webhook {
                 plugin.getLogger().severe("Invalid url when sending embed");
                 return;
             }
-
-            String json = embedLoader.start;
 
             if (confLoader.debug) {
                 plugin.getLogger().info("Debug: Sending embed to Discord \n" + json);
@@ -248,70 +243,6 @@ public class Webhook {
             }
         } catch (IOException | InterruptedException e) {
             plugin.getLogger().warning("Error when sending embed to Discord: " + e);
-        }
-    }
-
-    public void sendEmbed(String title, String description, int color) {
-        try {
-            Embed embed = new Embed();
-            embed.title = title;
-            embed.description = description;
-            embed.color = color;
-            embed.timestamp = Instant.now().toString();
-            embed.footer = new Footer("LumenMC Monitor " + plugin.getDescription().getVersion() + " | " + LocalDateTime.now());
-            embed.image = new Image("https://cdn.lumenvm.cloud/lumenmc-banner.png");
-
-            if (confLoader.P_SERVER_LOCATION != null && !confLoader.P_SERVER_LOCATION.isBlank() && confLoader.P_SERVER_UUID != null && !confLoader.P_SERVER_UUID.isBlank()) {
-                embed.fields = Arrays.asList(
-                        new Field("Time Zone", confLoader.TZ, true),
-                        new Field("Server Memory", (int) ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
-                        new Field("Server IP", confLoader.SERVER_IP, true),
-                        new Field("Server Port", confLoader.SERVER_PORT, true),
-                        new Field("Server Location", confLoader.P_SERVER_LOCATION, true),
-                        new Field("Server UUID", "```" + confLoader.P_SERVER_UUID + "```", true),
-                        new Field("Server Version", plugin.getServer().getVersion(), true),
-                        new Field("Number of Plugins", String.valueOf(plugin.getServer().getPluginManager().getPlugins().length), true)
-                );
-            } else {
-                embed.fields = Arrays.asList(
-                        new Field("Time Zone", TimeZone.getDefault().getID(), true),
-                        new Field("Server Memory", (int) ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() / (1024.0 * 1024.0) + "MB", true),
-                        new Field("Server Version", plugin.getServer().getVersion(), true),
-                        new Field("Number of Plugins", String.valueOf(plugin.getServer().getPluginManager().getPlugins().length), true)
-                );
-            }
-
-            WebhookEmbedPayload payload = new WebhookEmbedPayload();
-            payload.username = "LumenMC";
-            payload.avatar_url = "https://cdn.lumenvm.cloud/logo.png";
-            payload.embeds = Collections.singletonList(embed);
-
-            String json = gson.toJson(payload);
-
-            if (confLoader.debug) {
-                plugin.getLogger().info("Debug: Sending embed to Discord \n" + json);
-            }
-            URI webhookUri;
-            try {
-                webhookUri = URI.create(confLoader.url);
-            } catch (Exception e) {
-                plugin.getLogger().severe("Invalid url when sending embed");
-                return;
-            }
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(webhookUri)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (confLoader.debug) {
-                plugin.getLogger().info("Debug: Webhook embed sent: HTTP " + response.statusCode());
-                plugin.getLogger().info("Debug: Response body: " + response.body());
-            }
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "Error when sending embed to Discord: ", e);
         }
     }
 
@@ -517,41 +448,5 @@ public class Webhook {
         @SerializedName("avatar_url")String avatar_url;
         @SerializedName("content")String content;
         WebhookContentPayload(String content) { this.content = content; }
-    }
-
-    // Embed-only payload
-    static class WebhookEmbedPayload {
-        @SerializedName("username")String username;
-        @SerializedName("avatar_url")String avatar_url;
-        @SerializedName("embeds")List<Embed> embeds;
-    }
-
-    static class Image {
-        @SerializedName("url") String url;
-        Image(String url) { this.url = url; }
-    }
-
-    static class Embed {
-        @SerializedName("image")Image image;
-        @SerializedName("title")String title;
-        @SerializedName("description")String description;
-        @SerializedName("color")Integer color;
-        @SerializedName("timestamp")String timestamp;
-        @SerializedName("footer")Footer footer;
-        @SerializedName("fields")List<Field> fields;
-    }
-
-    static class Footer {
-        @SerializedName("text")String text;
-        Footer(String text) { this.text = text; }
-    }
-
-    static class Field {
-        @SerializedName("name")String name;
-        @SerializedName("value")String value;
-        @SerializedName("inline")Boolean inline;
-        Field(String name, String value, boolean inline) {
-            this.name = name; this.value = value; this.inline = inline;
-        }
     }
 }

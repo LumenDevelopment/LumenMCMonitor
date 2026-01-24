@@ -40,6 +40,7 @@ public class Monitor extends JavaPlugin implements Listener {
     private final List<String> expansions = new ArrayList<>();
     Collection<String> requiredExpansions = new ArrayList<>();
     private boolean starting = true;
+    EmbedLoader embedLoader;
 
 
     @Override
@@ -48,11 +49,11 @@ public class Monitor extends JavaPlugin implements Listener {
         Webhook.httpClient = httpClient;
         saveDefaultConfig();
         reloadConfig();
-        debug = getConfig().getBoolean("debug", false);
-        langLoader = new LanguageLoader(this);
-
         Webhook.setPlugin(this);
         EmbedLoader.setPlugin(this);
+        debug = getConfig().getBoolean("debug", false);
+        langLoader = new LanguageLoader(this);
+        embedLoader = new EmbedLoader();
         webhooks = new ArrayList<>();
         requiredExpansions.add("server");
         requiredExpansions.add("player");
@@ -99,9 +100,7 @@ public class Monitor extends JavaPlugin implements Listener {
         if (webhooks != null) {
             for (Webhook webhook : webhooks) {
                 if (!webhook.confLoader.failedToLoadConfig && webhook.confLoader.embedsStartStopEnabled && !reloading && !starting) {
-                    String embedStopTitle = PlaceholderAPI.setPlaceholders(null, langLoader.get("embed_stop_title"));
-                    String embedStopDescription = PlaceholderAPI.setPlaceholders(null, langLoader.get("embed_stop_description"));
-                    webhook.sendEmbed(embedStopTitle, embedStopDescription, Integer.parseInt(langLoader.get("embed_stop_color")));
+                    webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedLoader.stop));
                 }
             }
             for (Webhook webhook : webhooks) {
@@ -127,7 +126,7 @@ public class Monitor extends JavaPlugin implements Listener {
             for (Webhook webhook : webhooks) {
                 if (!webhook.confLoader.sendServerLoad) continue;
                 if (webhook.confLoader.embedsStartStopEnabled) {
-                    webhook.sendStart();
+                    webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedLoader.start));
                 } else {
                     String content = "[" + Instant.now() + "] [SERVER] Startup complete. For help, type \"help\"";
                     webhook.enqueueIfAllowed(content);

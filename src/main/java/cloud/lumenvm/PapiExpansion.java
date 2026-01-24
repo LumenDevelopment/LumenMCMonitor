@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.TimeZone;
 
 public class PapiExpansion extends PlaceholderExpansion {
-    private final Monitor plugin; //
+    private final Monitor plugin;
 
     public PapiExpansion(Monitor plugin) {
         this.plugin = plugin;
@@ -41,6 +41,12 @@ public class PapiExpansion extends PlaceholderExpansion {
         }
         if (params.equalsIgnoreCase("version")) {
             return plugin.getDescription().getVersion();
+        }
+        if (params.equalsIgnoreCase("username")) {
+            return plugin.getConfig().getString("username", "LumenMC");
+        }
+        if (params.equalsIgnoreCase("avatar")) {
+            return plugin.getConfig().getString("avatar_url", "https://cdn.lumenvm.cloud/logo.png");
         }
         return null;
     }

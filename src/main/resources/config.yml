@@ -12,6 +12,10 @@ debug: false
 # How often to send a batch (in ms)
 batch_interval_ms: 2000
 
+username: "LumenMC"
+
+avatar_url: "https://cdn.lumenvm.cloud/logo.png"
+
 webhooks:
   default:
     # URL of discord webhook (Do not change if you're using LumenMC in Pterodactyl)
