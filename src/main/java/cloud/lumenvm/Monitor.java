@@ -1,5 +1,7 @@
 package cloud.lumenvm;
 
+import me.clip.placeholderapi.events.ExpansionRegisterEvent;
+import me.clip.placeholderapi.events.ExpansionsLoadedEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.command.Command;
@@ -35,7 +37,9 @@ public class Monitor extends JavaPlugin implements Listener {
     private boolean reloading = false;
     public boolean debug;
     public List<Webhook> webhooks;
-    private boolean isPapiEnabled;
+    private final List<String> expansions = new ArrayList<>();
+    Collection<String> requiredExpansions = new ArrayList<>();
+    private boolean starting = true;
 
 
     @Override
@@ -50,6 +54,8 @@ public class Monitor extends JavaPlugin implements Listener {
         Webhook.setPlugin(this);
         EmbedLoader.setPlugin(this);
         webhooks = new ArrayList<>();
+        requiredExpansions.add("server");
+        requiredExpansions.add("player");
     }
 
     @Override
@@ -59,9 +65,7 @@ public class Monitor extends JavaPlugin implements Listener {
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             if (debug) getLogger().info("Debug: PlaceholderAPI detected");
             new PapiExpansion(this).register();
-            isPapiEnabled = true;
         } else {
-            isPapiEnabled = false;
             Bukkit.getPluginManager().disablePlugin(this);
         }
 
@@ -94,7 +98,7 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onDisable() {
         if (webhooks != null) {
             for (Webhook webhook : webhooks) {
-                if (!webhook.confLoader.failedToLoadConfig && webhook.confLoader.embedsStartStopEnabled && !reloading) {
+                if (!webhook.confLoader.failedToLoadConfig && webhook.confLoader.embedsStartStopEnabled && !reloading && !starting) {
                     String embedStopTitle = PlaceholderAPI.setPlaceholders(null, langLoader.get("embed_stop_title"));
                     String embedStopDescription = PlaceholderAPI.setPlaceholders(null, langLoader.get("embed_stop_description"));
                     webhook.sendEmbed(embedStopTitle, embedStopDescription, Integer.parseInt(langLoader.get("embed_stop_color")));
@@ -112,19 +116,38 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Events (chat, commands, etc.)
 
+    @EventHandler
+    public void onExpansionRegister(ExpansionRegisterEvent event) {
+        expansions.add(event.getExpansion().getIdentifier());
+    }
+
+    @EventHandler
+    public void onExpansionsLoaded(ExpansionsLoadedEvent event) {
+        if (new HashSet<>(expansions).containsAll(requiredExpansions) && starting) {
+            for (Webhook webhook : webhooks) {
+                if (!webhook.confLoader.sendServerLoad) continue;
+                if (webhook.confLoader.embedsStartStopEnabled) {
+                    webhook.sendStart();
+                } else {
+                    String content = "[" + Instant.now() + "] [SERVER] Startup complete. For help, type \"help\"";
+                    webhook.enqueueIfAllowed(content);
+                }
+                starting = false;
+            }
+        } else {
+            getLogger().severe("Please install following PAPI extensions: Player, Server");
+            Bukkit.getPluginManager().disablePlugin(this);
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendChat) continue;
-            String player = event.getPlayer().getName();
             String message = event.getMessage();
             String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_player_chat");
-            if (isPapiEnabled) {
-                content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
-                content = content.replace("%lumenmc_msg%", message);
-            } else {
-                content = content.replace("%player_name%", player).replace("%lumenmc_msg%", message);
-            }
+            content = content.replace("%lumenmc_msg%", message);
+            content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
             webhook.enqueueIfAllowed(content);
         }
     }
@@ -133,15 +156,10 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendPlayerCommands) continue;
-            String player = event.getPlayer().getName();
             String cmd = event.getMessage();
             String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_player_command");
-            if (isPapiEnabled) {
-                content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
-                content = content.replace("%lumenmc_cmd%", cmd);
-            } else {
-                content = content.replace("%player_name%", player).replace("%lumenmc_cmd%", cmd);
-            }
+            content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
+            content = content.replace("%lumenmc_cmd%", cmd);
             webhook.enqueueIfAllowed(content);
         }
     }
@@ -152,9 +170,7 @@ public class Monitor extends JavaPlugin implements Listener {
             if (!webhook.confLoader.sendConsoleCommands) continue;
             String cmd = event.getCommand();
             String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_server_command");
-            if (isPapiEnabled) {
-                content = PlaceholderAPI.setPlaceholders(null, content);
-            }
+            content = PlaceholderAPI.setPlaceholders(null, content);
             content = content.replace("%lumenmc_cmd%", cmd);
             webhook.enqueueIfAllowed(content);
         }
@@ -164,13 +180,8 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendJoinQuit) continue;
-            String name = event.getPlayer().getName();
             String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_join");
-            if (isPapiEnabled) {
-                content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
-            } else {
-                content = content.replace("%player_name%", name);
-            }
+            content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
             webhook.enqueueIfAllowed(content);
         }
     }
@@ -179,13 +190,8 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendJoinQuit) continue;
-            String name = event.getPlayer().getName();
             String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_quit");
-            if (isPapiEnabled) {
-                content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
-            } else {
-                content = content.replace("%player_name%", name);
-            }
+            content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
             webhook.enqueueIfAllowed(content);
         }
     }
@@ -198,9 +204,7 @@ public class Monitor extends JavaPlugin implements Listener {
             if (msg == null || msg.isBlank()) continue;
             String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_death");
             content = content.replace("%player_deathmsg%", msg);
-            if (isPapiEnabled) {
-                content = PlaceholderAPI.setPlaceholders(event.getEntity(), content);
-            }
+            content = PlaceholderAPI.setPlaceholders(event.getEntity(), content);
             webhook.enqueueIfAllowed(content);
         }
     }
@@ -209,34 +213,17 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onGamemodeChange(PlayerGameModeChangeEvent event) {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendGamemodeChanges) continue;
-            String name = event.getPlayer().getName();
             GameMode newMode = event.getNewGameMode();
             String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_player_gamemode_change");
-            if (isPapiEnabled) {
-                content = content.replace("%player_gamemode%", prettyMode(newMode));
-                content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
-            } else {
-                content = content.replace("%player_gamemode%", prettyMode(newMode));
-                content = content.replace("%player_name%", name);
-            }
+            content = content.replace("%player_gamemode%", prettyMode(newMode));
+            content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
             webhook.enqueueIfAllowed(content);
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onServerLoad(ServerLoadEvent event) {
-        for (Webhook webhook : webhooks) {
-            if (!webhook.confLoader.sendServerLoad) continue;
-            if (webhook.confLoader.embedsStartStopEnabled) {
-//                String embedStartTitle = PlaceholderAPI.setPlaceholders(null, langLoader.get("embed_start_title"));
-//                String embedStartDescription = PlaceholderAPI.setPlaceholders(null, langLoader.get("embed_start_description"));
-//                webhook.sendEmbed(embedStartTitle, embedStartDescription, Integer.parseInt(langLoader.get("embed_start_color")));
-                webhook.sendStart();
-            } else {
-                String content = "[" + Instant.now() + "] [SERVER] Startup complete. For help, type \"help\"";
-                webhook.enqueueIfAllowed(content);
-            }
-        }
+
     }
 
     private String prettyMode(GameMode mode) {
@@ -515,6 +502,7 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     // Help methods
+
     public boolean webhookTest(String url) {
         try {
             HttpRequest request = HttpRequest.newBuilder()

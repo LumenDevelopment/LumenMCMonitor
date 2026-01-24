@@ -11,8 +11,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.time.Instant;
-import java.util.TimeZone;
 
 public class EmbedLoader {
     private static Monitor plugin;
@@ -47,7 +45,6 @@ public class EmbedLoader {
         OfflinePlayer player = plugin.getServer().getPlayer("snvk_dev");
 
         start = PlaceholderAPI.setPlaceholders(player, start);
-        start = start.replace("%lumenmc_tz%", TimeZone.getDefault().getID());
     }
 
     public static void setPlugin(Monitor plugin) {

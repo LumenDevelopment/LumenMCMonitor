@@ -5,6 +5,7 @@ import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
+import java.util.TimeZone;
 
 public class PapiExpansion extends PlaceholderExpansion {
     private final Monitor plugin; //
@@ -32,7 +33,15 @@ public class PapiExpansion extends PlaceholderExpansion {
         if (params.equalsIgnoreCase("timestamp")) {
             return Instant.now().toString();
         }
-
+        if (params.equalsIgnoreCase("tz")) {
+            return TimeZone.getDefault().getID();
+        }
+        if (params.equalsIgnoreCase("plugins")) {
+            return String.valueOf(plugin.getServer().getPluginManager().getPlugins().length);
+        }
+        if (params.equalsIgnoreCase("version")) {
+            return plugin.getDescription().getVersion();
+        }
         return null;
     }
 }

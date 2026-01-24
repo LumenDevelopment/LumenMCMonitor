@@ -473,7 +473,7 @@ public class Webhook {
 
     public static void endTask() {
         Bukkit.getScheduler().cancelTask(taskId);
-        plugin.getLogger().info("Canceled task " + taskId);
+        if (plugin.debug) plugin.getLogger().info("Canceled task " + taskId);
         taskId = -1;
     }
 

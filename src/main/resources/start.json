@@ -9,26 +9,27 @@
       "color":3447003,
       "timestamp":"%lumenmc_timestamp%",
       "footer": {
-        "text":"LumenMC Monitor a1.4 | %lumenmc_timestamp%"
+        "text":"LumenMC Monitor %lumenmc_version%"
       },
       "fields":[
         {
-          "name":"Time Zone","value":"Europe/Prague",
+          "name":"Time Zone",
+          "value":"%lumenmc_tz%",
           "inline":true
         },
         {
           "name":"Server Memory",
-          "value":"-2048.0MB",
+          "value":"%server_ram_max%",
           "inline":true
         },
         {
           "name":"Server Version",
-          "value":"1.21.11-88-8556cb4 (MC: 1.21.11)"
+          "value":"%server_version%"
         ,"inline":true
         },
         {
           "name":"Number of Plugins",
-          "value":"2",
+          "value":"%lumenmc_plugins%",
           "inline":true
         }
       ]
