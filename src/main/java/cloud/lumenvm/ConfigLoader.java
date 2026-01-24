@@ -4,6 +4,10 @@ import java.util.List;
 import java.util.logging.Level;
 
 public class ConfigLoader {
+    // Plugin
+    private static Monitor plugin;
+
+    public String name;
     public String url;
     public Level minLevel;
     public boolean enableLogs;
@@ -16,7 +20,6 @@ public class ConfigLoader {
     public boolean debug;
     public boolean captureSystemStreams;
     public boolean failedToLoadConfig;
-    public String name;
 
     public boolean sendChat;
     public boolean sendPlayerCommands;
@@ -29,6 +32,9 @@ public class ConfigLoader {
 
     // Embeds
     public boolean embedsStartStopEnabled;
+    public boolean embedsJoinQuitEnabled;
+    public boolean embedsDeathsEnabled;
+    public boolean embedsWatchdogEnabled;
 
     // Watchdog
     public volatile long lastTickNanos = System.nanoTime();
@@ -39,17 +45,13 @@ public class ConfigLoader {
 
     // Pterodactyl variables
     public final String WEBHOOK_URL = System.getenv("WEBHOOK_URL");
-    public final String P_SERVER_LOCATION = System.getenv("P_SERVER_LOCATION");
-    public final String P_SERVER_UUID = System.getenv("P_SERVER_UUID");
-    public final String TZ = System.getenv("TZ");
-    public final String SERVER_IP = System.getenv("SERVER_IP");
-    public final String SERVER_PORT = System.getenv("SERVER_PORT");
 
-    public ConfigLoader(Monitor plugin, String name) {
+    public ConfigLoader(String name) {
         debug = plugin.getConfig().getBoolean("debug", false);
         this.name = name;
         url = plugin.getConfig().getString("webhooks." + name + ".url", "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX");
 
+        // Check for a valid url from config.yml or pterodactyl
         if (!url.isEmpty() && !url.equalsIgnoreCase("https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX")) {
             if (!plugin.webhookTest(url)) {
                 plugin.getLogger().severe("Webhook URL is invalid: " + url);
@@ -79,6 +81,7 @@ public class ConfigLoader {
             plugin.getLogger().info("Debug: Discord Webhook is url set to: " + url);
         }
 
+        // Set all the config variables
         minLevel = plugin.parseLevel(plugin.getConfig().getString("webhooks." + name + ".min_level", "INFO"));
         ignorePatterns = plugin.getConfig().getStringList("webhooks." + name + ".ignore_patterns");
         includeStackTraces = plugin.getConfig().getBoolean("webhooks." + name + ".include_stack_traces", true);
@@ -87,7 +90,6 @@ public class ConfigLoader {
         maxMessageLength = plugin.getConfig().getInt("webhooks." + name + ".max_message_length", 1900);
         removeMentions = plugin.getConfig().getBoolean("webhooks." + name + ".remove_mentions", true);
         captureSystemStreams = plugin.getConfig().getBoolean("webhooks." + name + ".capture_system_streams", true);
-        plugin.setLocale(plugin.getConfig().getString("webhooks." + name + ".locale", "en_US"));
         enableLogs = plugin.getConfig().getBoolean("webhooks." + name + ".enable_logs", false);
 
         sendChat = plugin.getConfig().getBoolean("webhooks." + name + ".send_chat", true);
@@ -99,11 +101,23 @@ public class ConfigLoader {
         sendGamemodeChanges = plugin.getConfig().getBoolean("webhooks." + name + ".send_gamemode_changes", true);
         sendServerLoad = plugin.getConfig().getBoolean("webhooks." + name + ".send_server_load", true);
 
+        // Embeds
         embedsStartStopEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".embeds_start_stop_enabled", true);
+        embedsJoinQuitEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".embeds_join_quit_enabled", true);
+        embedsDeathsEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".embeds_deaths_enabled", true);
+        embedsWatchdogEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".embeds_watchdog_enabled", true);
 
+        // Watchdog
         watchdogEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".watchdog_enabled", true);
         watchdogTimeoutMs = plugin.getConfig().getLong("webhooks." + name + ".watchdog_timeout_ms", 10000L);
         watchdogCheckIntervalMs = plugin.getConfig().getLong("webhooks." + name + ".watchdog_check_interval_ms", 2000L);
+
+        // Didn't fail to load
         failedToLoadConfig = false;
+    }
+
+    // Set plugin
+    public static void setPlugin(Monitor plugin) {
+        ConfigLoader.plugin = plugin;
     }
 }

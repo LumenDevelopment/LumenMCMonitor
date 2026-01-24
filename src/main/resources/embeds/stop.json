@@ -1,0 +1,38 @@
+{
+  "username":"%lumenmc_username%",
+  "avatar_url":"%lumenmc_avatar%",
+  "embeds":[
+    {
+      "image":{"url":"https://cdn.lumenvm.cloud/lumenmc-banner.png"},
+      "title":"\uD83D\uDFE5 Server stop",
+      "description":"\uD83D\uDED1 Server is shutting down.",
+      "color":15158332,
+      "timestamp":"%lumenmc_timestamp%",
+      "footer": {
+        "text":"LumenMC Monitor %lumenmc_version%"
+      },
+      "fields":[
+        {
+          "name":"Time Zone",
+          "value":"%lumenmc_tz%",
+          "inline":true
+        },
+        {
+          "name":"Server Memory",
+          "value":"%server_ram_max%MB",
+          "inline":true
+        },
+        {
+          "name":"Server Version",
+          "value":"%server_version%"
+        ,"inline":true
+        },
+        {
+          "name":"Number of Plugins",
+          "value":"%lumenmc_plugins%",
+          "inline":true
+        }
+      ]
+    }
+  ]
+}
