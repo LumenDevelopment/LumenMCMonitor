@@ -1,6 +1,5 @@
 package cloud.lumenvm;
 
-import me.clip.placeholderapi.events.ExpansionRegisterEvent;
 import me.clip.placeholderapi.events.ExpansionsLoadedEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -14,8 +13,8 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import me.clip.placeholderapi.PlaceholderAPI;
+import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.net.URI;
@@ -30,38 +29,67 @@ import java.util.List;
 import java.util.logging.Level;
 
 public class Monitor extends JavaPlugin implements Listener {
+    // Loaders
     LanguageLoader langLoader;
-    private String locale;
-    private static HttpClient httpClient;
-    private boolean reloading = false;
-    public boolean debug;
-    public List<Webhook> webhooks;
-    private final List<String> expansions = new ArrayList<>();
-    Collection<String> requiredExpansions = new ArrayList<>();
-    private boolean starting = true;
     EmbedLoader embedLoader;
 
+    // Locale
+    private String locale;
+
+    // Http client
+    private static HttpClient httpClient;
+
+    // Lists
+    public List<Webhook> webhooks;
+    Collection<String> requiredExpansions = new ArrayList<>();
+
+    // Help variables
+    private boolean reloading = false;
+    private boolean starting = true;
+
+    // Debug
+    public boolean debug;
 
     @Override
     public void onLoad() {
+        // Set http client
         httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
         Webhook.httpClient = httpClient;
-        saveDefaultConfig();
-        reloadConfig();
+
+        // Set plugins
         Webhook.setPlugin(this);
         EmbedLoader.setPlugin(this);
+        ConfigLoader.setPlugin(this);
+        LanguageLoader.setPlugin(this);
+
+        // Config
+        saveDefaultConfig();
+        reloadConfig();
+
+        // Set locale
+        locale = getConfig().getString("locale");
+
+        // Set debug
         debug = getConfig().getBoolean("debug", false);
+
+        // Loaders
         langLoader = new LanguageLoader(this);
         embedLoader = new EmbedLoader();
+
+        // Webhooks
         webhooks = new ArrayList<>();
+
+        // Add required PAPI expansions
         requiredExpansions.add("server");
         requiredExpansions.add("player");
     }
 
     @Override
     public void onEnable() {
+        // bStats
         new Metrics(this, 28902);
 
+        // Check for PAPI (isn't really needed but just in case)
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             if (debug) getLogger().info("Debug: PlaceholderAPI detected");
             new PapiExpansion(this).register();
@@ -69,6 +97,7 @@ public class Monitor extends JavaPlugin implements Listener {
             Bukkit.getPluginManager().disablePlugin(this);
         }
 
+        // Add webhooks
         ConfigurationSection webhooksSection = getConfig().getConfigurationSection("webhooks");
         if (webhooksSection != null) {
             Set<String> webhooksNames = webhooksSection.getKeys(false);
@@ -80,12 +109,14 @@ public class Monitor extends JavaPlugin implements Listener {
             getServer().getPluginManager().disablePlugin(this);
         }
 
+        // Check if config failed to load
         for (Webhook webhook : webhooks) {
             if (webhook.confLoader.failedToLoadConfig) {
                 return;
             }
         }
 
+        // Start drainAndSend() task
         Webhook.startTask();
 
         // Register events
@@ -97,37 +128,36 @@ public class Monitor extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         if (webhooks != null) {
+            // Send stop Embed
             for (Webhook webhook : webhooks) {
                 if (!webhook.confLoader.failedToLoadConfig && webhook.confLoader.embedsStartStopEnabled && !reloading && !starting) {
                     webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedLoader.stop));
                 }
             }
+            // Remove webhooks if there are any
             for (Webhook webhook : webhooks) {
                 webhook.removeAllWebhooks();
             }
 
+            // End drainAndSend() task
             Webhook.endTask();
 
+            // Last drainAndSend()
             Webhook.drainAndSend();
         }
     }
 
     // Events (chat, commands, etc.)
-
-    @EventHandler
-    public void onExpansionRegister(ExpansionRegisterEvent event) {
-        expansions.add(event.getExpansion().getIdentifier());
-    }
-
     @EventHandler
     public void onExpansionsLoaded(ExpansionsLoadedEvent event) {
-        if (new HashSet<>(expansions).containsAll(requiredExpansions) && starting) {
+        // Check if required PAPI expansions are registered
+        if (PlaceholderAPI.isRegistered("Player") && PlaceholderAPI.isRegistered("Server") && starting) {
             for (Webhook webhook : webhooks) {
                 if (!webhook.confLoader.sendServerLoad) continue;
                 if (webhook.confLoader.embedsStartStopEnabled) {
                     webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedLoader.start));
                 } else {
-                    String content = "[" + Instant.now() + "] [SERVER] Startup complete. For help, type \"help\"";
+                    String content = prettyTime() + "[SERVER] Startup complete. For help, type \"help\"";
                     webhook.enqueueIfAllowed(content);
                 }
                 starting = false;
@@ -140,6 +170,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
+        // Send chat if enabled
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendChat) continue;
             String message = event.getMessage();
@@ -152,6 +183,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
+        // Send command if enabled
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendPlayerCommands) continue;
             String cmd = event.getMessage();
@@ -164,6 +196,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent event) {
+        // Send command if enabled
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendConsoleCommands) continue;
             String cmd = event.getCommand();
@@ -176,6 +209,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onJoin(PlayerJoinEvent event) {
+        // Send join (embed) if enabled
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendJoinQuit) continue;
             if (webhook.confLoader.embedsJoinQuitEnabled){
@@ -190,6 +224,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onQuit(PlayerQuitEvent event) {
+        // Send quit (embed) if enabled
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendJoinQuit) continue;
             if (webhook.confLoader.embedsJoinQuitEnabled) {
@@ -204,6 +239,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(PlayerDeathEvent event) {
+        // Send death (embed) if enabled
         String msg = event.getDeathMessage();
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendDeaths) continue;
@@ -221,6 +257,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onGamemodeChange(PlayerGameModeChangeEvent event) {
+        // Send gamemode change if enabled
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendGamemodeChanges) continue;
             GameMode newMode = event.getNewGameMode();
@@ -231,17 +268,7 @@ public class Monitor extends JavaPlugin implements Listener {
         }
     }
 
-    private String prettyMode(GameMode mode) {
-        return switch (mode) {
-            case SURVIVAL -> "Survival Mode";
-            case CREATIVE -> "Creative Mode";
-            case ADVENTURE -> "Adventure Mode";
-            case SPECTATOR -> "Spectator Mode";
-        };
-    }
-
-    // Plugin command
-
+    // Commands
     @Override
     public boolean onCommand(@NonNull CommandSender sender, Command command, @NonNull String label, String @NonNull [] args) {
         if (!command.getName().equalsIgnoreCase("lumenmc")) return false;
@@ -289,7 +316,7 @@ public class Monitor extends JavaPlugin implements Listener {
                     return true;
                 }
                 if (langName.contains(".yml")) langName = langName.replace(".yml", "");
-                sender.sendMessage(langLoader.createLang(this, langName));
+                sender.sendMessage(langLoader.createLang(langName));
                 return true;
             }
 
@@ -309,7 +336,7 @@ public class Monitor extends JavaPlugin implements Listener {
                     return true;
                 }
                 if (langName.contains(".yml")) langName = langName.replace(".yml", "");
-                sender.sendMessage(langLoader.removeLang(this, langName));
+                sender.sendMessage(langLoader.removeLang(langName));
                 return true;
             }
 
@@ -329,7 +356,7 @@ public class Monitor extends JavaPlugin implements Listener {
                     return true;
                 }
                 if (langName.contains(".yml")) langName = langName.replace(".yml", "");
-                sender.sendMessage(langLoader.setLang(this, langName));
+                sender.sendMessage(langLoader.setLang(langName));
                 return true;
             }
 
@@ -366,7 +393,7 @@ public class Monitor extends JavaPlugin implements Listener {
                     }
                 }
                 try {
-                    sender.sendMessage(langLoader.editLang(this, key, newObject.toString()));
+                    sender.sendMessage(langLoader.editLang(key, newObject.toString()));
                 } catch (IOException e) {
                     getLogger().severe("§cError when editing " + locale + ".yml");
                 }
@@ -466,6 +493,7 @@ public class Monitor extends JavaPlugin implements Listener {
         return false;
     }
 
+    // Tab complete
     @Override
     public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String alias, String @NonNull [] args) {
         List<String> list = new ArrayList<>();
@@ -513,8 +541,7 @@ public class Monitor extends JavaPlugin implements Listener {
         return list;
     }
 
-    // Config
-
+    // Config reload
     void pluginReload() {
         reloading = true;
         onDisable();
@@ -524,8 +551,16 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     // Help methods
+    private String prettyMode(GameMode mode) {
+        return switch (mode) {
+            case SURVIVAL -> "Survival Mode";
+            case CREATIVE -> "Creative Mode";
+            case ADVENTURE -> "Adventure Mode";
+            case SPECTATOR -> "Spectator Mode";
+        };
+    }
 
-    private String prettyTime() {
+    public String prettyTime() {
         return "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] ";
     }
 
@@ -552,11 +587,8 @@ public class Monitor extends JavaPlugin implements Listener {
         catch (Exception e) { return Level.INFO; }
     }
 
+    // Get locale
     public String getLocale() {
         return locale;
-    }
-
-    public void setLocale(String setLocale) {
-        locale = setLocale;
     }
 }

@@ -12,8 +12,10 @@ debug: false
 # How often to send a batch (in ms)
 batch_interval_ms: 2000
 
+# Set username for discord webhook
 username: "LumenMC"
 
+# Set avatar image for discord webhook
 avatar_url: "https://cdn.lumenvm.cloud/logo.png"
 
 webhooks:
@@ -39,11 +41,13 @@ webhooks:
     # Send join and quit messages
     send_join_quit: true
 
+    # Embeds for join and quit messages
     embeds_join_quit_enabled: true
 
     # Send death messages
     send_deaths: true
 
+    # Embeds for death messages
     embeds_deaths_enabled: true
 
     # Send gamemode changes

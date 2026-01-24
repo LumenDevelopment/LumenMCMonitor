@@ -22,29 +22,42 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 public class Webhook {
-
+    // Plugin
     private static Monitor plugin;
+
+    // Config loader
     public final ConfigLoader confLoader;
+
+    // Http client
     public static HttpClient httpClient;
+
+    // Drain lock
     static final AtomicBoolean drainLock = new AtomicBoolean(false);
+
+    // Gson
     private static final Gson gson = new Gson();
+
+    // Bukkit task id
     private static int taskId = -1;
 
-
+    // Watchdog
     public int watchdogHeartbeatTaskId = -1;
     public int watchdogCheckerTaskId = -1;
 
+    // Handler
     private Handler commonHandler;
     private boolean handlersAttached = false;
-
-    private PrintStream originalOut;
-    private PrintStream originalErr;
-
     private final Deque<Integer> recentHashes = new ArrayDeque<>();
     private static final int DEDUPE_WINDOW = 256;
 
+    // System streams
+    private PrintStream originalOut;
+    private PrintStream originalErr;
+
+    // Queue
     public final ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<>();
 
+    // JUL
     private final java.util.logging.Formatter julFormatter = new java.util.logging.Formatter() {
         @Override
         public String format(LogRecord record) {
@@ -53,16 +66,20 @@ public class Webhook {
     };
 
     Webhook(String name) {
-        this.confLoader = new ConfigLoader(plugin, name);
+        // Set config loader by name
+        this.confLoader = new ConfigLoader(name);
 
+        // Check if failed to load config
         if (confLoader.failedToLoadConfig) {
             plugin.getLogger().severe("Webhook URL is NOT set. Pleas adjust pterodactyl server configuration/config.yml accordingly and RESTART the server :)");
             plugin.getServer().getPluginManager().disablePlugin(plugin);
             return;
         }
 
+        // System streams
         if (confLoader.captureSystemStreams) attachSystemStreamsTEE();
 
+        // Handler
         commonHandler = new Handler() {
             @Override
             public void publish(LogRecord record) {
@@ -87,12 +104,11 @@ public class Webhook {
             @Override public void close() throws SecurityException {}
         };
         commonHandler.setLevel(Level.ALL);
-
         attachHandlers();
 
         if (plugin.debug) plugin.getLogger().info("Debug: Handlers connected in onEnable(); queueing logs");
 
-
+        // Watchdog
         if (confLoader.watchdogEnabled) {
             // Heartbeat
             watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(plugin, () -> confLoader.lastTickNanos = System.nanoTime(), 0L, 1L).getTaskId();
@@ -102,7 +118,6 @@ public class Webhook {
             watchdogCheckerTaskId = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
                 long now = System.nanoTime();
                 long elapsedMs = (now - confLoader.lastTickNanos) / 1_000_000L;
-
                 if (elapsedMs >= confLoader.watchdogTimeoutMs) {
                     if (!confLoader.watchdogAlerted) {
                         confLoader.watchdogAlerted = true;
@@ -131,25 +146,37 @@ public class Webhook {
         }
     }
 
+    // System streams
     private void attachSystemStreamsTEE() {
         if (originalOut == null) originalOut = System.out;
         if (originalErr == null) originalErr = System.err;
-
         System.setOut(new PrintStream(originalOut) {
             @Override public void println(String x) {
-                enqueueIfAllowed("[" + Instant.now() + "] [INFO] [System.out] " + x);
+                enqueueIfAllowed("[" + plugin.prettyTime() + "] [INFO] [System.out] " + x);
                 super.println(x);
             }
         });
         System.setErr(new PrintStream(originalErr) {
             @Override public void println(String x) {
-                enqueueIfAllowed("[" + Instant.now() + "] [INFO] [System.err] " + x);
+                enqueueIfAllowed("[" + plugin.prettyTime() + "] [INFO] [System.err] " + x);
                 super.println(x);
             }
         });
         if (plugin.debug) plugin.getLogger().info("Debug: System streams on.");
     }
 
+    private void detachSystemStreamsTEE() {
+        if (originalOut != null) {
+            System.setOut(originalOut);
+            originalOut = null;
+        }
+        if (originalErr != null) {
+            System.setErr(originalErr);
+            originalErr = null;
+        }
+    }
+
+    // Format logs
     private String formatRecord(LogRecord record) {
         StringBuilder sb = new StringBuilder();
 
@@ -188,10 +215,14 @@ public class Webhook {
         return sw.toString();
     }
 
+    // Sending
     public void enqueueIfAllowed(String content) {
+        // Remove mentions
         if (confLoader.removeMentions) {
             content = content.replace("@everyone", "＠everyone").replace("@here", "＠here");
         }
+
+        // Add to queue
         for (String chunk : splitMessage(filterMessage(content), confLoader.maxMessageLength)) {
             queue.offer(chunk);
         }
@@ -255,20 +286,6 @@ public class Webhook {
         }
     }
 
-    public String filterMessage(String msg) {
-        if (msg == null || confLoader.ignorePatterns == null) return null;
-        for (String pattern : confLoader.ignorePatterns) {
-            if (pattern == null || pattern.isBlank()) continue;
-            try {
-                if (msg.contains(pattern)) {
-                    msg = msg.replace(pattern, "\\*\\*\\*\\*\\*");
-                }
-            }
-            catch (Exception ignored) {}
-        }
-        return msg;
-    }
-
     public static void drainAndSend() {
         // Anti-double-drain lock
         if (!drainLock.compareAndSet(false, true)) {
@@ -308,41 +325,27 @@ public class Webhook {
         }
     }
 
-    public static List<String> splitMessage(String msg, int maxLen) {
-        List<String> parts = new ArrayList<>();
-        if (msg == null) return parts;
-        if (msg.length() <= maxLen) { parts.add(msg); return parts; }
-        int i = 0;
-        while (i < msg.length()) {
-            int end = Math.min(i + maxLen, msg.length());
-            parts.add(msg.substring(i, end));
-            i = end;
+    // Filter
+    public String filterMessage(String msg) {
+        if (msg == null || confLoader.ignorePatterns == null) return null;
+        for (String pattern : confLoader.ignorePatterns) {
+            if (pattern == null || pattern.isBlank()) continue;
+            try {
+                if (msg.contains(pattern)) {
+                    msg = msg.replace(pattern, "\\*\\*\\*\\*\\*");
+                }
+            }
+            catch (Exception ignored) {}
         }
-        return parts;
+        return msg;
     }
 
+    // Set Plugin
     public static void setPlugin(Monitor plugin) {
         Webhook.plugin = plugin;
     }
 
-    public static int msToTicks(int ms) {
-        int ticks = (int) Math.ceil(ms / 50.0);
-        return Math.max(1, ticks);
-    }
-
-    private void detachSystemStreamsTEE() {
-        if (originalOut != null) {
-            System.setOut(originalOut);
-            originalOut = null;
-        }
-        if (originalErr != null) {
-            System.setErr(originalErr);
-            originalErr = null;
-        }
-    }
-
     // Handlers
-
     private void attachHandlers() {
         if (handlersAttached) return;
 
@@ -401,6 +404,7 @@ public class Webhook {
         handlersAttached = false;
     }
 
+    // Help methods
     public static void startTask() {
         int ticks = Webhook.msToTicks(plugin.getConfig().getInt("batch_interval_ms"));
 
@@ -448,6 +452,24 @@ public class Webhook {
 
     public static void removeWebhook(String name) {
         plugin.getConfig().set("webhooks." + name, null);
+    }
+
+    public static List<String> splitMessage(String msg, int maxLen) {
+        List<String> parts = new ArrayList<>();
+        if (msg == null) return parts;
+        if (msg.length() <= maxLen) { parts.add(msg); return parts; }
+        int i = 0;
+        while (i < msg.length()) {
+            int end = Math.min(i + maxLen, msg.length());
+            parts.add(msg.substring(i, end));
+            i = end;
+        }
+        return parts;
+    }
+
+    public static int msToTicks(int ms) {
+        int ticks = (int) Math.ceil(ms / 50.0);
+        return Math.max(1, ticks);
     }
 
     // Content-only payload
