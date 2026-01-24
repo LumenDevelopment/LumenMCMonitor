@@ -1,5 +1,5 @@
 name: 'LumenMCMonitor'
-version: 'a1.4'
+version: 'b1.0'
 main: cloud.lumenvm.Monitor
 api-version: '1.18'
 authors: ["Lumen Development", "SNVK"]
@@ -10,7 +10,7 @@ depend: ["PlaceholderAPI"]
 commands:
   lumenmc:
     description: Commands for LumenMC Monitor
-    usage: /lumenmc test|lang|reload|setwebhook (For full usage visit plugin website)
+    usage: /lumenmc test|lang|reload|webhook|config (For full usage visit plugin website)
     permission: lumenmc.admin
 permissions:
   lumenmc.admin:
