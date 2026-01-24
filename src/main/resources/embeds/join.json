@@ -1,0 +1,28 @@
+{
+  "username":"%lumenmc_username%",
+  "avatar_url":"%lumenmc_avatar%",
+  "embeds":[
+    {
+      "image":{"url":"https://cdn.lumenvm.cloud/lumenmc-banner.png"},
+      "title":"💁Someone joined the game!",
+      "description":"Say hello to %player_name%",
+      "color":16776960,
+      "timestamp":"%lumenmc_timestamp%",
+      "footer": {
+        "text":"LumenMC Monitor %lumenmc_version%"
+      },
+      "fields":[
+        {
+          "name":"Level",
+          "value":"%player_level%",
+          "inline":true
+        },
+        {
+          "name":"First played",
+          "value":"%player_first_played_formatted%",
+          "inline":true
+        }
+      ]
+    }
+  ]
+}

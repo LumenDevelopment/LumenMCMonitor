@@ -27,7 +27,7 @@ webhooks:
     # Minimal logs level (SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST)
     min_level: "INFO"
 
-    # Send from chat
+    # Send chat
     send_chat: true
 
     # Send player commands
@@ -39,8 +39,12 @@ webhooks:
     # Send join and quit messages
     send_join_quit: true
 
+    embeds_join_quit_enabled: true
+
     # Send death messages
     send_deaths: true
+
+    embeds_deaths_enabled: true
 
     # Send gamemode changes
     send_gamemode_changes: false
@@ -58,6 +62,8 @@ webhooks:
 
     # Enable Watchdog
     watchdog_enabled: true
+
+    embeds_watchdog_enabled: true
 
     # Ho long it takes to alert Watchdog (in ms)
     watchdog_timeout_ms: 10000

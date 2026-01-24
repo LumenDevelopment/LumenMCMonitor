@@ -106,14 +106,23 @@ public class Webhook {
                 if (elapsedMs >= confLoader.watchdogTimeoutMs) {
                     if (!confLoader.watchdogAlerted) {
                         confLoader.watchdogAlerted = true;
-                        enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + PlaceholderAPI.setPlaceholders(null, plugin.langLoader.get("watchdog_alert_message")));
-                        if (plugin.debug) plugin.getLogger().warning("WATCHDOG alert: main thread stalled for " + elapsedMs + " ms");
+                        if (confLoader.embedsWatchdogEnabled) {
+                            sendJson(PlaceholderAPI.setPlaceholders(null, plugin.embedLoader.watchdog.replace("%lumenmc_watchdogmsg%", plugin.langLoader.get("watchdog_alert_message"))));
+                        } else {
+                            enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + PlaceholderAPI.setPlaceholders(null, plugin.langLoader.get("watchdog_alert_message")));
+                            if (plugin.debug)
+                                plugin.getLogger().warning("WATCHDOG alert: main thread stalled for " + elapsedMs + " ms");
+                        }
                     }
                 } else {
                     // Restored
                     if (confLoader.watchdogAlerted) {
                         confLoader.watchdogAlerted = false;
-                        enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + PlaceholderAPI.setPlaceholders(null, plugin.langLoader.get("watchdog_recovery_message")));
+                        if (confLoader.embedsWatchdogEnabled) {
+                            sendJson(PlaceholderAPI.setPlaceholders(null, plugin.embedLoader.watchdog.replace("%lumenmc_watchdogmsg%", plugin.langLoader.get("watchdog_recovery_message"))));
+                        } else {
+                            enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + PlaceholderAPI.setPlaceholders(null, plugin.langLoader.get("watchdog_recovery_message")));
+                        }
                     }
                 }
             }, checkTicks, checkTicks).getTaskId();
@@ -404,7 +413,6 @@ public class Webhook {
 
     public static void endTask() {
         Bukkit.getScheduler().cancelTask(taskId);
-        if (plugin.debug) plugin.getLogger().info("Canceled task " + taskId);
         taskId = -1;
     }
 

@@ -19,7 +19,7 @@
         },
         {
           "name":"Server Memory",
-          "value":"%server_ram_max%",
+          "value":"%server_ram_max%MB",
           "inline":true
         },
         {

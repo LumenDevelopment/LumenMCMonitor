@@ -1,0 +1,16 @@
+{
+  "username":"%lumenmc_username%",
+  "avatar_url":"%lumenmc_avatar%",
+  "embeds":[
+    {
+      "image":{"url":"https://cdn.lumenvm.cloud/lumenmc-banner.png"},
+      "title":"☠️%player_name% died!",
+      "description":"%player_deathmsg%",
+      "color":0,
+      "timestamp":"%lumenmc_timestamp%",
+      "footer": {
+        "text":"LumenMC Monitor %lumenmc_version%"
+      }
+    }
+  ]
+}

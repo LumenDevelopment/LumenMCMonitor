@@ -15,14 +15,22 @@ public class EmbedLoader {
     File embedDirectory;
     public String start;
     public String stop;
+    public String join;
+    public String quit;
+    public String death;
+    public String watchdog;
     private static final Gson gson = new Gson();
 
     EmbedLoader() {
         embedDirectory = new File(plugin.getDataFolder(), "embeds/");
         if (!embedDirectory.isDirectory()) embedDirectory.mkdir();
 
-        start = readJson("start.json", "embeds/start.json");
-        stop = readJson("stop.json", "embeds/stop.json");
+        start = readJson("embeds/start.json", "embeds/start.json");
+        stop = readJson("embeds/stop.json", "embeds/stop.json");
+        join = readJson("embeds/join.json", "embeds/join.json");
+        quit = readJson("embeds/quit.json", "embeds/quit.json");
+        death = readJson("embeds/death.json", "embeds/death.json");
+        watchdog = readJson("embeds/watchdog.json", "embeds/watchdog.json");
     }
 
     private String readJson(String fileName, String child) {

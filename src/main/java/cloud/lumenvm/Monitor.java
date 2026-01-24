@@ -13,7 +13,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
-import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -144,7 +143,7 @@ public class Monitor extends JavaPlugin implements Listener {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendChat) continue;
             String message = event.getMessage();
-            String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_player_chat");
+            String content = prettyTime() + langLoader.get("on_player_chat");
             content = content.replace("%lumenmc_msg%", message);
             content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
             webhook.enqueueIfAllowed(content);
@@ -156,7 +155,7 @@ public class Monitor extends JavaPlugin implements Listener {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendPlayerCommands) continue;
             String cmd = event.getMessage();
-            String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_player_command");
+            String content = prettyTime() + langLoader.get("on_player_command");
             content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
             content = content.replace("%lumenmc_cmd%", cmd);
             webhook.enqueueIfAllowed(content);
@@ -168,7 +167,7 @@ public class Monitor extends JavaPlugin implements Listener {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendConsoleCommands) continue;
             String cmd = event.getCommand();
-            String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_server_command");
+            String content = prettyTime() + langLoader.get("on_server_command");
             content = PlaceholderAPI.setPlaceholders(null, content);
             content = content.replace("%lumenmc_cmd%", cmd);
             webhook.enqueueIfAllowed(content);
@@ -179,9 +178,13 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendJoinQuit) continue;
-            String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_join");
-            content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
-            webhook.enqueueIfAllowed(content);
+            if (webhook.confLoader.embedsJoinQuitEnabled){
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embedLoader.join));
+            } else {
+                String content = prettyTime() + langLoader.get("on_join");
+                content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
+                webhook.enqueueIfAllowed(content);
+            }
         }
     }
 
@@ -189,22 +192,30 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendJoinQuit) continue;
-            String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_quit");
-            content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
-            webhook.enqueueIfAllowed(content);
+            if (webhook.confLoader.embedsJoinQuitEnabled) {
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embedLoader.quit));
+            } else {
+                String content = prettyTime() + langLoader.get("on_quit");
+                content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
+                webhook.enqueueIfAllowed(content);
+            }
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(PlayerDeathEvent event) {
+        String msg = event.getDeathMessage();
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendDeaths) continue;
-            String msg = event.getDeathMessage();
-            if (msg == null || msg.isBlank()) continue;
-            String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_death");
-            content = content.replace("%player_deathmsg%", msg);
-            content = PlaceholderAPI.setPlaceholders(event.getEntity(), content);
-            webhook.enqueueIfAllowed(content);
+            if (msg == null || msg.isBlank()) return;
+            if (webhook.confLoader.embedsDeathsEnabled) {
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getEntity(), embedLoader.death.replace("%player_deathmsg%", msg)));
+            } else {
+                String content = prettyTime() + langLoader.get("on_death");
+                content = content.replace("%player_deathmsg%", msg);
+                content = PlaceholderAPI.setPlaceholders(event.getEntity(), content);
+                webhook.enqueueIfAllowed(content);
+            }
         }
     }
 
@@ -213,16 +224,11 @@ public class Monitor extends JavaPlugin implements Listener {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendGamemodeChanges) continue;
             GameMode newMode = event.getNewGameMode();
-            String content = "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] " + langLoader.get("on_player_gamemode_change");
+            String content = prettyTime() + langLoader.get("on_player_gamemode_change");
             content = content.replace("%player_gamemode%", prettyMode(newMode));
             content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
             webhook.enqueueIfAllowed(content);
         }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onServerLoad(ServerLoadEvent event) {
-
     }
 
     private String prettyMode(GameMode mode) {
@@ -431,10 +437,26 @@ public class Monitor extends JavaPlugin implements Listener {
                     return true;
                 }
                 if (args.length == 3) {
-                    getConfig().set(args[1], args[2]);
-                    saveConfig();
-                    pluginReload();
-                    sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                    if (args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false")) {
+                        boolean option = Boolean.parseBoolean(args[2]);
+                        getConfig().set(args[1], option);
+                        saveConfig();
+                        pluginReload();
+                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                        return true;
+                    }
+                    try {
+                        int number = Integer.parseInt(args[2]);
+                        getConfig().set(args[1], number);
+                        saveConfig();
+                        pluginReload();
+                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                    } catch (Exception e) {
+                        getConfig().set(args[1], args[2]);
+                        saveConfig();
+                        pluginReload();
+                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                    }
                     return true;
                 }
                 sender.sendMessage("Use: /lumenmc config [configPath] [value]");
@@ -452,6 +474,7 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("reload");
             list.add("lang");
             list.add("webhook");
+            list.add("config");
             list.sort(null);
             return list;
         }
@@ -501,6 +524,10 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     // Help methods
+
+    private String prettyTime() {
+        return "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] ";
+    }
 
     public boolean webhookTest(String url) {
         try {

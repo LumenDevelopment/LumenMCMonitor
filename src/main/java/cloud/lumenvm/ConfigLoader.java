@@ -29,6 +29,9 @@ public class ConfigLoader {
 
     // Embeds
     public boolean embedsStartStopEnabled;
+    public boolean embedsJoinQuitEnabled;
+    public boolean embedsDeathsEnabled;
+    public boolean embedsWatchdogEnabled;
 
     // Watchdog
     public volatile long lastTickNanos = System.nanoTime();
@@ -39,11 +42,6 @@ public class ConfigLoader {
 
     // Pterodactyl variables
     public final String WEBHOOK_URL = System.getenv("WEBHOOK_URL");
-    public final String P_SERVER_LOCATION = System.getenv("P_SERVER_LOCATION");
-    public final String P_SERVER_UUID = System.getenv("P_SERVER_UUID");
-    public final String TZ = System.getenv("TZ");
-    public final String SERVER_IP = System.getenv("SERVER_IP");
-    public final String SERVER_PORT = System.getenv("SERVER_PORT");
 
     public ConfigLoader(Monitor plugin, String name) {
         debug = plugin.getConfig().getBoolean("debug", false);
@@ -100,6 +98,9 @@ public class ConfigLoader {
         sendServerLoad = plugin.getConfig().getBoolean("webhooks." + name + ".send_server_load", true);
 
         embedsStartStopEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".embeds_start_stop_enabled", true);
+        embedsJoinQuitEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".embeds_join_quit_enabled", true);
+        embedsDeathsEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".embeds_deaths_enabled", true);
+        embedsWatchdogEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".embeds_watchdog_enabled", true);
 
         watchdogEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".watchdog_enabled", true);
         watchdogTimeoutMs = plugin.getConfig().getLong("webhooks." + name + ".watchdog_timeout_ms", 10000L);
