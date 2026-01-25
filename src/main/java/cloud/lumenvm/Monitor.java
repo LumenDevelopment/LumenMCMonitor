@@ -291,6 +291,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
         if (args[0].equalsIgnoreCase("reload")) {
             pluginReload();
+            sender.sendMessage("§aReloaded...");
             return true;
         }
 
