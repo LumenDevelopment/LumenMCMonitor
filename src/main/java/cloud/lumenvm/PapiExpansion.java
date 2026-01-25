@@ -46,7 +46,7 @@ public class PapiExpansion extends PlaceholderExpansion {
             return plugin.getConfig().getString("username", "LumenMC");
         }
         if (params.equalsIgnoreCase("avatar")) {
-            return plugin.getConfig().getString("avatar_url", "https://cdn.lumenvm.cloud/logo.png");
+            return plugin.getConfig().getString("avatar_url", "https://cdn.lumenvm.cloud/lumenmc_monitor.png");
         }
         return null;
     }
