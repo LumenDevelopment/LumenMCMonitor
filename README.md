@@ -13,9 +13,6 @@ It even notifies you when the server stops ticking!
 > ⚠️ Warning
 ><br>The plugin is in a beta stage of development. You may experience bugs.
 
-## Showcase
-
-
 ## Features
 1. Can send messages:
     - Server start/stop
