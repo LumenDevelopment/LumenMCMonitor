@@ -3,6 +3,7 @@
 <img src="./images/icon700x700.png" width="100px" height="100px" alt="Icon">
 
 [![Discord](https://badgen.net/discord/members/zUueFq98bB?icon=discord&label=Discord&list=what)](https://discord.gg/zUueFq98bB)
+![GitHub Release](https://img.shields.io/github/v/release/LumenDevelopment/LumenMCMonitor?include_prereleases&display_name=release)
 
 ## Minecraft plugin that sends Discord Webhooks from your server!
 It's designed to work with [LumenMC](https://builtbybit.com/resources/lumenmc.52562/), but it works fine even without it.
