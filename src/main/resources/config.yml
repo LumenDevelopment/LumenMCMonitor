@@ -16,7 +16,7 @@ batch_interval_ms: 2000
 username: "LumenMC"
 
 # Set avatar image for discord webhook
-avatar_url: "https://cdn.lumenvm.cloud/logo.png"
+avatar_url: "https://cdn.lumenvm.cloud/lumenmc_monitor.png"
 
 webhooks:
   default:

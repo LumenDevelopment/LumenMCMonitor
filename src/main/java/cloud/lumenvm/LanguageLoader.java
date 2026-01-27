@@ -101,7 +101,7 @@ public class LanguageLoader {
     // Returns response
     // Create language and set it in config.yml
     public String createLang(String langName) {
-        langName.toLowerCase();
+        langName = langName.toLowerCase();
         if (plugin.debug) plugin.getLogger().info("Debug: Creating custom language file: " + langName);
         customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
         if (!customLanguageFile.exists()) {
@@ -128,7 +128,7 @@ public class LanguageLoader {
 
     // Remove language file
     public String removeLang(String langName) {
-        langName.toLowerCase();
+        langName = langName.toLowerCase();
         if (plugin.debug) plugin.getLogger().info("Debug: Removing custom language file " + langName);
         customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
         if (customLanguageFile.exists()) {
@@ -145,7 +145,7 @@ public class LanguageLoader {
 
     // Set Language
     public String setLang(String langName) {
-        langName.toLowerCase();
+        langName = langName.toLowerCase();
         customLanguageFile = new File(plugin.getDataFolder(), "languages/" + langName + ".yml");
         if (plugin.debug) plugin.getLogger().info("Debug: Setting language file " + customLanguageFile.getName());
         if (customLanguageFile.exists()) {
@@ -177,7 +177,6 @@ public class LanguageLoader {
     public String editLang(String key, String newObject) throws IOException {
         String locale = plugin.getConfig().getString("locale", "en_US").toLowerCase();
         if (!locale.equalsIgnoreCase("en_US")) {
-            //File customLanguageFile = new File(plugin.getDataFolder(), "languages/" + locale + ".yml");
             FileConfiguration translations = YamlConfiguration.loadConfiguration(customLanguageFile);
             if (customLanguageFile.exists()) {
                 translations.set(key, newObject);

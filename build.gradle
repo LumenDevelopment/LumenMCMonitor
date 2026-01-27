@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'cloud.lumenvm'
-version = 'b1.0'
+version = 'b1.1'
 
 repositories {
     mavenCentral()

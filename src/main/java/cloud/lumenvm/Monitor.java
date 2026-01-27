@@ -50,6 +50,8 @@ public class Monitor extends JavaPlugin implements Listener {
     // Debug
     public boolean debug;
 
+    private final String version = getDescription().getVersion();
+
     @Override
     public void onLoad() {
         // Set http client
@@ -86,8 +88,8 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        // bStats
-        new Metrics(this, 28902);
+        // Metrics
+        metrics();
 
         // Check for PAPI (isn't really needed but just in case)
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
@@ -245,10 +247,10 @@ public class Monitor extends JavaPlugin implements Listener {
             if (!webhook.confLoader.sendDeaths) continue;
             if (msg == null || msg.isBlank()) return;
             if (webhook.confLoader.embedsDeathsEnabled) {
-                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getEntity(), embedLoader.death.replace("%player_deathmsg%", msg)));
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getEntity(), embedLoader.death.replace("%lumenmc_deathmsg%", msg)));
             } else {
                 String content = prettyTime() + langLoader.get("on_death");
-                content = content.replace("%player_deathmsg%", msg);
+                content = content.replace("%lumenmc_deathmsg%", msg);
                 content = PlaceholderAPI.setPlaceholders(event.getEntity(), content);
                 webhook.enqueueIfAllowed(content);
             }
@@ -291,6 +293,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
         if (args[0].equalsIgnoreCase("reload")) {
             pluginReload();
+            sender.sendMessage("§aReloaded...");
             return true;
         }
 
@@ -542,12 +545,25 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     // Config reload
-    void pluginReload() {
+    public void pluginReload() {
         reloading = true;
         onDisable();
         onLoad();
         onEnable();
         reloading = false;
+    }
+
+    // bStats metrics
+    private void metrics() {
+        Metrics metrics = new Metrics(this, 28902);
+        metrics.addCustomChart(new Metrics.SimplePie("isPtero", () -> {
+            if (System.getenv("P_SERVER_UUID") != null) {
+                return "Yes";
+            } else {
+                return "No";
+            }
+        }));
+
     }
 
     // Help methods

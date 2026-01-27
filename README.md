@@ -1,6 +1,6 @@
 # LumenMC Monitor
 
-<img src="./images/icon.svg" width="100px" height="100px" alt="Icon">
+<img src="./images/icon700x700.png" width="100px" height="100px" alt="Icon">
 
 [![Discord](https://badgen.net/discord/members/zUueFq98bB?icon=discord&label=Discord&list=what)](https://discord.gg/zUueFq98bB)
 
@@ -12,9 +12,6 @@ It even notifies you when the server stops ticking!
 
 > ⚠️ Warning
 ><br>The plugin is in a beta stage of development. You may experience bugs.
-
-## Showcase
-
 
 ## Features
 1. Can send messages:
