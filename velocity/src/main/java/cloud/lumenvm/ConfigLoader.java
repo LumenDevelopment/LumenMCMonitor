@@ -1,3 +1,5 @@
+package cloud.lumenvm;
+
 import com.velocitypowered.api.proxy.ProxyServer;
 
 import java.util.List;
