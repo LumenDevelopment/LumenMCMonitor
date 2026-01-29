@@ -57,9 +57,12 @@ public class Monitor {
         if (!configFile.exists()) {
             extractConfig();
         } else {
-            InputStream stream = this.getClass().getClassLoader().getResourceAsStream("config.yml");
-            Map<String, Object> yamlMap = yaml.load(stream);
-            flatten("", yamlMap, configMap);
+            try (InputStream yamlStream = new FileInputStream(configFile)) {
+                Map<String, Object> yamlMap = yaml.load(yamlStream);
+                flatten("", yamlMap, configMap);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
 
         locale = configMap.get("locale").toString();
@@ -73,7 +76,7 @@ public class Monitor {
     public void onProxyInitialization(ProxyInitializeEvent event) {
         metrics(this);
 
-        logger.warn(configMap.toString());
+        if (debug) logger.warn(configMap.toString());
 
         // Webhooks
         List<String> webhookNames = configMap.keySet().stream()
@@ -91,9 +94,13 @@ public class Monitor {
         // Extract config
         try {
             InputStream stream = Objects.requireNonNull(getClass().getResourceAsStream("/config.yml"));
-            Map<String, Object> yamlMap = yaml.load(stream);
             FileUtils.copyInputStreamToFile(stream, configFile);
-            flatten("", yamlMap, configMap);
+            try (InputStream yamlStream = new FileInputStream(configFile)) {
+                Map<String, Object> yamlMap = yaml.load(yamlStream);
+                flatten("", yamlMap, configMap);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         } catch (IOException e) {
             logger.error("Unable to extract config file: {}", String.valueOf(e));
         }
