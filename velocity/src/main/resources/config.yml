@@ -1,0 +1,99 @@
+##############################
+########## General ##########
+##############################
+
+# Default: en_US
+# Enter without .yml
+locale: "en_US"
+
+# Enable if you want to see debug stuff
+debug: false
+
+# How often to send a batch (in ms)
+batch_interval_ms: 2000
+
+# Set username for discord webhook
+username: "LumenMC"
+
+# Set avatar image for discord webhook
+avatar_url: "https://cdn.lumenvm.cloud/lumenmc_monitor.png"
+
+webhooks:
+  default:
+    # URL of discord webhook (Do not change if you're using LumenMC in Pterodactyl)
+    url: https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX
+
+    # Enable if you want to send logs
+    enable_logs: false
+
+    # Minimal logs level (SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST)
+    min_level: "INFO"
+
+    # Send chat
+    send_chat: true
+
+    # Send player commands
+    send_player_commands: false
+
+    # Send console commands
+    send_console_commands: false
+
+    # Send join and quit messages
+    send_join_quit: true
+
+    # Embeds for join and quit messages
+    embeds_join_quit_enabled: true
+
+    # Send death messages
+    send_deaths: true
+
+    # Embeds for death messages
+    embeds_deaths_enabled: true
+
+    # Send gamemode changes
+    send_gamemode_changes: false
+
+    # Send server start/stop messages
+    send_server_start_stop: true
+
+    # Embeds for start and stop messages
+    embeds_start_stop_enabled: true
+
+    ##############################
+    ########## Watchdog ##########
+    ##############################
+
+
+    # Enable Watchdog
+    watchdog_enabled: true
+
+    embeds_watchdog_enabled: true
+
+    # Ho long it takes to alert Watchdog (in ms)
+    watchdog_timeout_ms: 10000
+
+    # How often should Watchdog check (in ms)
+    watchdog_check_interval_ms: 2000
+
+
+    ##############################
+    ########## Advanced ##########
+    ##############################
+
+    # Filters
+    ignore_patterns: [ ]
+
+    # Maximum amount of messages in one batch
+    max_batch_size: 50
+
+    # Maximum length of one Discord message (Discord has a limit of 2000 characters)
+    max_message_length: 1900
+
+    # Include stack traces
+    include_stack_traces: true
+
+    # Remove mentions
+    remove_mentions: true
+
+    # Catches System.out and System.err
+    capture_system_streams: true
