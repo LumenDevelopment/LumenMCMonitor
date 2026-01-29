@@ -1,7 +1,10 @@
+import com.velocitypowered.api.proxy.ProxyServer;
+
 import java.util.List;
 import java.util.logging.Level;
 
 public class ConfigLoader {
+    private static ProxyServer server;
 
     public String name;
     public String url;
@@ -46,4 +49,7 @@ public class ConfigLoader {
 
     }
 
+    public static void setServer(ProxyServer server) {
+        ConfigLoader.server = server;
+    }
 }
