@@ -1,6 +1,7 @@
 package cloud.lumenvm;
 
 import com.google.inject.Inject;
+import com.velocitypowered.api.event.EventManager;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Plugin;
@@ -14,6 +15,9 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.*;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Plugin(
@@ -23,6 +27,8 @@ import java.util.*;
         authors = {"Lumen Development", "SNVK"}
 )
 public class Monitor {
+    @Inject
+    public EventManager eventManager;
 
     // Http client
     private static HttpClient httpClient;
@@ -50,6 +56,8 @@ public class Monitor {
         Webhook.httpClient = httpClient;
 
         Webhook.setServer(server);
+        Webhook.setLogger(logger);
+        Webhook.setPlugin(this);
         ConfigLoader.setServer(server);
 
         configFile = new File(dataDirectory.toFile(), "config.yml");
@@ -86,8 +94,8 @@ public class Monitor {
                 .toList();
 
         for (String name : webhookNames) {
-                webhooks.add(new Webhook(name, logger));
-            }
+            webhooks.add(new Webhook(name));
+        }
     }
 
     private void extractConfig() {
@@ -122,7 +130,15 @@ public class Monitor {
         }
     }
 
+    public String prettyTime() {
+        return "[" + DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.now()) + "] ";
+    }
+
     private void metrics(Object plugin) {
         metricsFactory.make(plugin, 29156);
+    }
+
+    public void disable() {
+        eventManager.unregisterListeners(this);
     }
 }
