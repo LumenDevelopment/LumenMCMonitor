@@ -18,6 +18,9 @@ username: "LumenMC"
 # Set avatar image for discord webhook
 avatar_url: "https://cdn.lumenvm.cloud/lumenmc_monitor.png"
 
+# Set server name
+server_name: "Server"
+
 webhooks:
   default:
     # URL of discord webhook (Do not change if you're using LumenMC in Pterodactyl)
