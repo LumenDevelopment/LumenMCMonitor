@@ -1,13 +1,27 @@
-allprojects {
-    group = "cloud.lumenvm"
-    version = "b1.1"
+plugins {
+    id 'java'
 }
 
-subprojects {
-    apply plugin: "java"
+group = 'cloud.lumenvm'
+version = 'b1.1'
 
+repositories {
+    mavenCentral()
+    maven {url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven {url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+    maven {url 'https://repo.extendedclip.com/releases/'}
+    maven {url 'https://repo.extendedclip.com/releases/'}
+}
 
-    repositories {
-        mavenCentral()
-    }
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    compileOnly 'org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT'
+    implementation 'commons-io:commons-io:2.21.0'
+    compileOnly 'me.clip:placeholderapi:2.11.7'
+}
+
+test {
+    useJUnitPlatform()
 }

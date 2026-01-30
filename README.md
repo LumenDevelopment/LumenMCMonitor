@@ -1,4 +1,4 @@
-# LumenMC cloud.lumenvm.Monitor
+# LumenMC Monitor
 
 <img src="./images/icon700x700.png" width="100px" height="100px" alt="Icon">
 
