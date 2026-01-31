@@ -40,7 +40,6 @@ import java.util.logging.Level;
 //
 
 public class Monitor extends JavaPlugin implements Listener {
-    private final static int modrinthVersions = 2;
 
     // Loaders
     LanguageLoader langLoader;
@@ -665,28 +664,41 @@ public class Monitor extends JavaPlugin implements Listener {
 
     private void checkUpdate() {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest request1 = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.modrinth.com/v2/project/KOXT4g2K"))
                     .GET()
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response1 = httpClient.send(request1, HttpResponse.BodyHandlers.ofString());
 
-            String json = response.body();
+            String json1 = response1.body();
 
-            JsonObject root = JsonParser.parseString(json).getAsJsonObject();
-            JsonArray versionsJson = root.getAsJsonArray("versions");
+            JsonObject root1 = JsonParser.parseString(json1).getAsJsonObject();
+            JsonArray versionsJson1 = root1.getAsJsonArray("versions");
 
             List<String> versions = new Gson().fromJson(
-                    versionsJson,
+                    versionsJson1,
                     new TypeToken<List<String>>() {}.getType()
             );
 
-            if (versions.size() <= modrinthVersions) {
+            HttpRequest request2 = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.modrinth.com/v2/version/" + versions.get(versions.size() - 1)))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response2 = httpClient.send(request2, HttpResponse.BodyHandlers.ofString());
+
+            String json2 = response2.body();
+
+            JsonObject root2 = JsonParser.parseString(json2).getAsJsonObject();
+            String latest = root2.get("version_number").toString().replace("\"", "");
+
+            if (getDescription().getVersion().equalsIgnoreCase(latest)) {
                 getServer().getConsoleSender().sendMessage("§aLumenMC Monitor is up to date");
             } else {
-                getServer().getConsoleSender().sendMessage("§cLumenMC Monitor is outdated, please download the newest version");
+                getServer().getConsoleSender().sendMessage("§cLumenMC Monitor is outdated, please download the newest version. §rYou're on §c" + getDescription().getVersion() + "§r the latest is §a" + latest + "§r");
             }
+
         } catch (IOException | InterruptedException e) {
             getLogger().warning("Unable to check for updates: " + e);
 
