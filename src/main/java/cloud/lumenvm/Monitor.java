@@ -1,5 +1,10 @@
 package cloud.lumenvm;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 import me.clip.placeholderapi.events.ExpansionsLoadedEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -12,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
+import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.jspecify.annotations.NonNull;
@@ -34,6 +40,8 @@ import java.util.logging.Level;
 //
 
 public class Monitor extends JavaPlugin implements Listener {
+    private final static int modrinthVersions = 2;
+
     // Loaders
     LanguageLoader langLoader;
     EmbedLoader embedLoader;
@@ -54,8 +62,6 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Debug
     public boolean debug;
-
-    private final String version = getDescription().getVersion();
 
     @Override
     public void onLoad() {
@@ -107,7 +113,7 @@ public class Monitor extends JavaPlugin implements Listener {
         // Metrics
         metrics();
 
-        // Check for PAPI (isn't really needed but just in case)
+        // Check for PAPI
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             if (debug) getLogger().info("Debug: PlaceholderAPI detected");
             new PapiExpansion(this).register();
@@ -163,6 +169,11 @@ public class Monitor extends JavaPlugin implements Listener {
             // Last drainAndSend()
             Webhook.drainAndSend();
         }
+    }
+
+    @EventHandler
+    public void onServerLoad(ServerLoadEvent event) {
+        checkUpdate();
     }
 
     // Events (chat, commands, etc.)
@@ -617,6 +628,36 @@ public class Monitor extends JavaPlugin implements Listener {
     Level parseLevel(String s) {
         try { return Level.parse(s == null ? "INFO" : s.toUpperCase()); }
         catch (Exception e) { return Level.INFO; }
+    }
+
+    private void checkUpdate() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.modrinth.com/v2/project/KOXT4g2K"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            String json = response.body();
+
+            JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+            JsonArray versionsJson = root.getAsJsonArray("versions");
+
+            List<String> versions = new Gson().fromJson(
+                    versionsJson,
+                    new TypeToken<List<String>>() {}.getType()
+            );
+
+            if (versions.size() <= modrinthVersions) {
+                getServer().getConsoleSender().sendMessage("§aLumenMC Monitor is up to date");
+            } else {
+                getServer().getConsoleSender().sendMessage("§cLumenMC Monitor is outdated, please download the newest version");
+            }
+        } catch (IOException | InterruptedException e) {
+            getLogger().warning("Unable to check for updates: " + e);
+
+        }
     }
 
     // Get locale
