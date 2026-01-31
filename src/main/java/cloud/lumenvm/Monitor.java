@@ -520,6 +520,39 @@ public class Monitor extends JavaPlugin implements Listener {
                 return true;
             }
         }
+
+        if (args[0].equalsIgnoreCase("send")) {
+            if (args.length == 1) {
+                sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                return true;
+            }
+
+            if (webhooksNames.contains(args[1])) {
+                for (Webhook webhook : webhooks) {
+                    for (String name : webhooksNames) {
+                        if (name.equalsIgnoreCase(args[1])) break;
+                        sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                        return true;
+                    }
+                    if (args.length == 2) {
+                        sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                        return true;
+                    }
+                    StringBuilder joinText = new StringBuilder();
+                    joinText.append(prettyTime()).append(" ").append("Message: ");
+                    for (int i = 2; i <= (args.length - 1); i++) {
+                        joinText.append(args[(i)]).append(" ");
+                    }
+                    webhook.enqueueIfAllowed(joinText.toString());
+                    return true;
+                }
+                sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                return true;
+            }
+
+            sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+            return true;
+        }
         return false;
     }
 

@@ -302,7 +302,7 @@ public class Webhook {
                 if (batch.isEmpty()) return;
 
                 String combined = String.join("\n", batch);
-                List<String> payloads =  splitMessage(combined, webhook.confLoader.maxMessageLength);
+                List<String> payloads = splitMessage(combined, webhook.confLoader.maxMessageLength);
 
                 if (plugin.debug)
                     plugin.getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());
