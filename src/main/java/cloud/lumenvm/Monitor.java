@@ -28,6 +28,11 @@ import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
 
+//    ▖          ▖  ▖▄▖  ▖  ▖    ▘▗
+//    ▌ ▌▌▛▛▌█▌▛▌▛▖▞▌▌   ▛▖▞▌▛▌▛▌▌▜▘▛▌▛▘
+//    ▙▖▙▌▌▌▌▙▖▌▌▌▝ ▌▙▖  ▌▝ ▌▙▌▌▌▌▐▖▙▌▌
+//
+
 public class Monitor extends JavaPlugin implements Listener {
     // Loaders
     LanguageLoader langLoader;
@@ -88,6 +93,17 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        String asciiArt =
+                """
+                        
+                        §5▖          ▖  ▖▄▖  §1▖  ▖    ▘▗
+                        §5▌ ▌▌▛▛▌█▌▛▌▛▖▞▌▌   §1▛▖▞▌▛▌▛▌▌▜▘▛▌▛▘
+                        §5▙▖▙▌▌▌▌▙▖▌▌▌▝ ▌▙▖  §1▌▝ ▌▙▌▌▌▌▐▖▙▌▌§r
+                        """ +
+                "Version: " + getDescription().getVersion() + " On: " +getServer().getBukkitVersion() + "\n";
+
+        if (!reloading) getServer().getConsoleSender().sendMessage(asciiArt + "§r");
+
         // Metrics
         metrics();
 
