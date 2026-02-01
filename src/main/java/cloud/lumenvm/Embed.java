@@ -9,37 +9,30 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.Map;
 
-public class EmbedLoader {
+public class Embed {
     // Plugin
     private static Monitor plugin;
 
     // Embeds directory
     File embedDirectory;
 
-    // Embeds
-    public String start;
-    public String stop;
-    public String join;
-    public String quit;
-    public String death;
-    public String watchdog;
+    public String embed;
 
     // Gson
     private static final Gson gson = new Gson();
 
-    EmbedLoader() {
+    public Embed(String name) {
         // Sets embeds directory (create if it doesn't exist)
         embedDirectory = new File(plugin.getDataFolder(), "embeds/");
         if (!embedDirectory.isDirectory()) embedDirectory.mkdir();
 
-        // Load JSONs
-        start = readJson("embeds/start.json", "embeds/start.json");
-        stop = readJson("embeds/stop.json", "embeds/stop.json");
-        join = readJson("embeds/join.json", "embeds/join.json");
-        quit = readJson("embeds/quit.json", "embeds/quit.json");
-        death = readJson("embeds/death.json", "embeds/death.json");
-        watchdog = readJson("embeds/watchdog.json", "embeds/watchdog.json");
+        // Load JSON
+        embed = readJson("embeds/" + name + ".json", "embeds/" + name + ".json");
+
+
+
     }
 
     private String readJson(String fileName, String child) {
@@ -50,7 +43,12 @@ public class EmbedLoader {
         // Create if it doesn't exist
         if (!file.exists()) {
             try {
-                InputStream stream = plugin.getResource(fileName);
+                InputStream stream;
+                if (fileName.equals("quit") || fileName.equals("join") || fileName.equals("start") || fileName.equals("stop") || fileName.equals("death") || fileName.equals("watchdog")) {
+                    stream = plugin.getResource(fileName);
+                } else {
+                    stream = plugin.getResource("embeds/template.json");
+                }
                 assert stream != null;
                 FileUtils.copyInputStreamToFile(stream, file);
             } catch (IOException e) {
@@ -71,6 +69,6 @@ public class EmbedLoader {
 
     // Set Plugin
     public static void setPlugin(Monitor plugin) {
-        EmbedLoader.plugin = plugin;
+        Embed.plugin = plugin;
     }
 }

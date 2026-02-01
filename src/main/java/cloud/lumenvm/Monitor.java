@@ -44,6 +44,9 @@ public class Monitor extends JavaPlugin implements Listener {
     // Loaders
     LanguageLoader langLoader;
     EmbedLoader embedLoader;
+    Embed embedLoader;
+
+    public Map<String, Embed> embeds;
 
     // Locale
     private String locale;
@@ -70,7 +73,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
         // Set plugins
         Webhook.setPlugin(this);
-        EmbedLoader.setPlugin(this);
+        Embed.setPlugin(this);
         ConfigLoader.setPlugin(this);
         LanguageLoader.setPlugin(this);
 
@@ -86,10 +89,11 @@ public class Monitor extends JavaPlugin implements Listener {
 
         // Loaders
         langLoader = new LanguageLoader(this);
-        embedLoader = new EmbedLoader();
 
         // Webhooks
         webhooks = new ArrayList<>();
+
+        embeds = new HashMap<>();
 
         // Add required PAPI expansions
         requiredExpansions.add("server");
@@ -142,6 +146,13 @@ public class Monitor extends JavaPlugin implements Listener {
         // Start drainAndSend() task
         Webhook.startTask();
 
+        embeds.put("start", new Embed("start"));
+        embeds.put("stop", new Embed("stop"));
+        embeds.put("join", new Embed("join"));
+        embeds.put("quit", new Embed("quit"));
+        embeds.put("death", new Embed("death"));
+        embeds.put("watchdog", new Embed("watchdog"));
+
         // Register events
         if (!reloading) {
             getServer().getPluginManager().registerEvents(this, this);
@@ -154,7 +165,7 @@ public class Monitor extends JavaPlugin implements Listener {
             // Send stop Embed
             for (Webhook webhook : webhooks) {
                 if (!webhook.confLoader.failedToLoadConfig && webhook.confLoader.embedsStartStopEnabled && !reloading && !starting) {
-                    webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedLoader.stop));
+                    webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embeds.get("stop").embed));
                 }
             }
             // Remove webhooks if there are any
@@ -183,7 +194,7 @@ public class Monitor extends JavaPlugin implements Listener {
             for (Webhook webhook : webhooks) {
                 if (!webhook.confLoader.sendServerLoad) continue;
                 if (webhook.confLoader.embedsStartStopEnabled) {
-                    webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedLoader.start));
+                    webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embeds.get("start").embed));
                 } else {
                     String content = prettyTime() + "[SERVER] Startup complete. For help, type \"help\"";
                     webhook.enqueueIfAllowed(content);
@@ -241,7 +252,7 @@ public class Monitor extends JavaPlugin implements Listener {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendJoinQuit) continue;
             if (webhook.confLoader.embedsJoinQuitEnabled){
-                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embedLoader.join));
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embeds.get("join").embed));
             } else {
                 String content = prettyTime() + langLoader.get("on_join");
                 content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
@@ -256,7 +267,7 @@ public class Monitor extends JavaPlugin implements Listener {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendJoinQuit) continue;
             if (webhook.confLoader.embedsJoinQuitEnabled) {
-                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embedLoader.quit));
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embeds.get("quit").embed));
             } else {
                 String content = prettyTime() + langLoader.get("on_quit");
                 content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
@@ -273,7 +284,7 @@ public class Monitor extends JavaPlugin implements Listener {
             if (!webhook.confLoader.sendDeaths) continue;
             if (msg == null || msg.isBlank()) return;
             if (webhook.confLoader.embedsDeathsEnabled) {
-                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getEntity(), embedLoader.death.replace("%lumenmc_deathmsg%", msg)));
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getEntity(), embeds.get("death").embed.replace("%lumenmc_deathmsg%", msg)));
             } else {
                 String content = prettyTime() + langLoader.get("on_death");
                 content = content.replace("%lumenmc_deathmsg%", msg);
