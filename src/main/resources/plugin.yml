@@ -1,5 +1,5 @@
 name: 'LumenMCMonitor'
-version: 'b1.1'
+version: 'b1.2'
 main: cloud.lumenvm.Monitor
 api-version: "1.18"
 authors: ["Lumen Development", "SNVK"]
