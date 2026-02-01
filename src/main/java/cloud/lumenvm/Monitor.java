@@ -43,10 +43,12 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Loaders
     LanguageLoader langLoader;
-    EmbedLoader embedLoader;
     Embed embedLoader;
 
     public Map<String, Embed> embeds;
+
+    // Addon manager
+    public AddonManager manager;
 
     // Locale
     private String locale;
@@ -153,6 +155,8 @@ public class Monitor extends JavaPlugin implements Listener {
         embeds.put("death", new Embed("death"));
         embeds.put("watchdog", new Embed("watchdog"));
 
+        manager = new AddonManager(this);
+
         // Register events
         if (!reloading) {
             getServer().getPluginManager().registerEvents(this, this);
@@ -161,6 +165,9 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+
+        manager.unLoad();
+
         if (webhooks != null) {
             // Send stop Embed
             for (Webhook webhook : webhooks) {
@@ -637,6 +644,18 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     // Help methods
+    public void fireContent(String content) {
+        for (Webhook webhook : webhooks) {
+            webhook.enqueueIfAllowed(content);
+        }
+    }
+
+    public void fireEmbed(String embedJson) {
+        for (Webhook webhook : webhooks) {
+            webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedJson));
+        }
+    }
+
     private String prettyMode(GameMode mode) {
         return switch (mode) {
             case SURVIVAL -> "Survival Mode";

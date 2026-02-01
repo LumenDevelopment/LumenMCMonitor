@@ -1,5 +1,6 @@
 plugins {
-    id 'java'
+    id 'java-library'
+    id 'maven-publish'
 }
 
 group = 'cloud.lumenvm'
@@ -13,6 +14,10 @@ repositories {
     maven {url 'https://repo.extendedclip.com/releases/'}
 }
 
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -20,6 +25,25 @@ dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT'
     implementation 'commons-io:commons-io:2.21.0'
     compileOnly 'me.clip:placeholderapi:2.11.7'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components["java"]
+            artifactId = 'lumenmc-monitor'
+        }
+    }
+}
+
+tasks.register("mystuff", Exec) {
+    group 'build'
+    commandLine './move.sh'
+}
+
+tasks.named("build") {
+    dependsOn 'mystuff'
+    dependsOn 'publishToMavenLocal'
 }
 
 test {
