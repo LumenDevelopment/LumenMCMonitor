@@ -20,6 +20,7 @@ public class ConfigLoader {
     public boolean debug;
     public boolean captureSystemStreams;
     public boolean failedToLoadConfig;
+    public String serverName;
 
     public boolean sendChat;
     public boolean sendPlayerCommands;
@@ -91,6 +92,7 @@ public class ConfigLoader {
         removeMentions = plugin.getConfig().getBoolean("webhooks." + name + ".remove_mentions", true);
         captureSystemStreams = plugin.getConfig().getBoolean("webhooks." + name + ".capture_system_streams", true);
         enableLogs = plugin.getConfig().getBoolean("webhooks." + name + ".enable_logs", false);
+        serverName = plugin.getConfig().getString("webhooks." + name + ".server_name", "Server");
 
         sendChat = plugin.getConfig().getBoolean("webhooks." + name + ".send_chat", true);
         sendPlayerCommands = plugin.getConfig().getBoolean("webhooks." + name + ".send_player_commands", true);

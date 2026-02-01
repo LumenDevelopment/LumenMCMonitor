@@ -1,5 +1,10 @@
 package cloud.lumenvm;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 import me.clip.placeholderapi.events.ExpansionsLoadedEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -12,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
+import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.jspecify.annotations.NonNull;
@@ -28,10 +34,21 @@ import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
 
+//    ▖          ▖  ▖▄▖  ▖  ▖    ▘▗
+//    ▌ ▌▌▛▛▌█▌▛▌▛▖▞▌▌   ▛▖▞▌▛▌▛▌▌▜▘▛▌▛▘
+//    ▙▖▙▌▌▌▌▙▖▌▌▌▝ ▌▙▖  ▌▝ ▌▙▌▌▌▌▐▖▙▌▌
+//
+
 public class Monitor extends JavaPlugin implements Listener {
+
     // Loaders
     LanguageLoader langLoader;
-    EmbedLoader embedLoader;
+    Embed embedLoader;
+
+    public Map<String, Embed> embeds;
+
+    // Addon manager
+    public AddonManager manager;
 
     // Locale
     private String locale;
@@ -50,8 +67,6 @@ public class Monitor extends JavaPlugin implements Listener {
     // Debug
     public boolean debug;
 
-    private final String version = getDescription().getVersion();
-
     @Override
     public void onLoad() {
         // Set http client
@@ -60,7 +75,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
         // Set plugins
         Webhook.setPlugin(this);
-        EmbedLoader.setPlugin(this);
+        Embed.setPlugin(this);
         ConfigLoader.setPlugin(this);
         LanguageLoader.setPlugin(this);
 
@@ -76,10 +91,11 @@ public class Monitor extends JavaPlugin implements Listener {
 
         // Loaders
         langLoader = new LanguageLoader(this);
-        embedLoader = new EmbedLoader();
 
         // Webhooks
         webhooks = new ArrayList<>();
+
+        embeds = new HashMap<>();
 
         // Add required PAPI expansions
         requiredExpansions.add("server");
@@ -88,10 +104,21 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        String asciiArt =
+                """
+                        
+                        §5▖          ▖  ▖▄▖  §1▖  ▖    ▘▗
+                        §5▌ ▌▌▛▛▌█▌▛▌▛▖▞▌▌   §1▛▖▞▌▛▌▛▌▌▜▘▛▌▛▘
+                        §5▙▖▙▌▌▌▌▙▖▌▌▌▝ ▌▙▖  §1▌▝ ▌▙▌▌▌▌▐▖▙▌▌§r
+                        """ +
+                "Version: " + getDescription().getVersion() + " On: " +getServer().getBukkitVersion() + "\n";
+
+        if (!reloading) getServer().getConsoleSender().sendMessage(asciiArt + "§r");
+
         // Metrics
         metrics();
 
-        // Check for PAPI (isn't really needed but just in case)
+        // Check for PAPI
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             if (debug) getLogger().info("Debug: PlaceholderAPI detected");
             new PapiExpansion(this).register();
@@ -121,6 +148,15 @@ public class Monitor extends JavaPlugin implements Listener {
         // Start drainAndSend() task
         Webhook.startTask();
 
+        embeds.put("start", new Embed("start"));
+        embeds.put("stop", new Embed("stop"));
+        embeds.put("join", new Embed("join"));
+        embeds.put("quit", new Embed("quit"));
+        embeds.put("death", new Embed("death"));
+        embeds.put("watchdog", new Embed("watchdog"));
+
+        manager = new AddonManager(this);
+
         // Register events
         if (!reloading) {
             getServer().getPluginManager().registerEvents(this, this);
@@ -129,11 +165,14 @@ public class Monitor extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+
+        manager.unLoad();
+
         if (webhooks != null) {
             // Send stop Embed
             for (Webhook webhook : webhooks) {
                 if (!webhook.confLoader.failedToLoadConfig && webhook.confLoader.embedsStartStopEnabled && !reloading && !starting) {
-                    webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedLoader.stop));
+                    webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embeds.get("stop").embed));
                 }
             }
             // Remove webhooks if there are any
@@ -149,6 +188,11 @@ public class Monitor extends JavaPlugin implements Listener {
         }
     }
 
+    @EventHandler
+    public void onServerLoad(ServerLoadEvent event) {
+        checkUpdate();
+    }
+
     // Events (chat, commands, etc.)
     @EventHandler
     public void onExpansionsLoaded(ExpansionsLoadedEvent event) {
@@ -157,7 +201,7 @@ public class Monitor extends JavaPlugin implements Listener {
             for (Webhook webhook : webhooks) {
                 if (!webhook.confLoader.sendServerLoad) continue;
                 if (webhook.confLoader.embedsStartStopEnabled) {
-                    webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedLoader.start));
+                    webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embeds.get("start").embed));
                 } else {
                     String content = prettyTime() + "[SERVER] Startup complete. For help, type \"help\"";
                     webhook.enqueueIfAllowed(content);
@@ -215,7 +259,7 @@ public class Monitor extends JavaPlugin implements Listener {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendJoinQuit) continue;
             if (webhook.confLoader.embedsJoinQuitEnabled){
-                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embedLoader.join));
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embeds.get("join").embed));
             } else {
                 String content = prettyTime() + langLoader.get("on_join");
                 content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
@@ -230,7 +274,7 @@ public class Monitor extends JavaPlugin implements Listener {
         for (Webhook webhook : webhooks) {
             if (!webhook.confLoader.sendJoinQuit) continue;
             if (webhook.confLoader.embedsJoinQuitEnabled) {
-                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embedLoader.quit));
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embeds.get("quit").embed));
             } else {
                 String content = prettyTime() + langLoader.get("on_quit");
                 content = PlaceholderAPI.setPlaceholders(event.getPlayer(), content);
@@ -247,7 +291,7 @@ public class Monitor extends JavaPlugin implements Listener {
             if (!webhook.confLoader.sendDeaths) continue;
             if (msg == null || msg.isBlank()) return;
             if (webhook.confLoader.embedsDeathsEnabled) {
-                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getEntity(), embedLoader.death.replace("%lumenmc_deathmsg%", msg)));
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getEntity(), embeds.get("death").embed.replace("%lumenmc_deathmsg%", msg)));
             } else {
                 String content = prettyTime() + langLoader.get("on_death");
                 content = content.replace("%lumenmc_deathmsg%", msg);
@@ -493,6 +537,39 @@ public class Monitor extends JavaPlugin implements Listener {
                 return true;
             }
         }
+
+        if (args[0].equalsIgnoreCase("send")) {
+            if (args.length == 1) {
+                sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                return true;
+            }
+
+            if (webhooksNames.contains(args[1])) {
+                for (Webhook webhook : webhooks) {
+                    for (String name : webhooksNames) {
+                        if (name.equalsIgnoreCase(args[1])) break;
+                        sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                        return true;
+                    }
+                    if (args.length == 2) {
+                        sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                        return true;
+                    }
+                    StringBuilder joinText = new StringBuilder();
+                    joinText.append(prettyTime()).append(" ").append("Message: ");
+                    for (int i = 2; i <= (args.length - 1); i++) {
+                        joinText.append(args[(i)]).append(" ");
+                    }
+                    webhook.enqueueIfAllowed(joinText.toString());
+                    return true;
+                }
+                sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                return true;
+            }
+
+            sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+            return true;
+        }
         return false;
     }
 
@@ -567,6 +644,18 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     // Help methods
+    public void fireContent(String content) {
+        for (Webhook webhook : webhooks) {
+            webhook.enqueueIfAllowed(content);
+        }
+    }
+
+    public void fireEmbed(String embedJson) {
+        for (Webhook webhook : webhooks) {
+            webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedJson));
+        }
+    }
+
     private String prettyMode(GameMode mode) {
         return switch (mode) {
             case SURVIVAL -> "Survival Mode";
@@ -601,6 +690,49 @@ public class Monitor extends JavaPlugin implements Listener {
     Level parseLevel(String s) {
         try { return Level.parse(s == null ? "INFO" : s.toUpperCase()); }
         catch (Exception e) { return Level.INFO; }
+    }
+
+    private void checkUpdate() {
+        try {
+            HttpRequest request1 = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.modrinth.com/v2/project/KOXT4g2K"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response1 = httpClient.send(request1, HttpResponse.BodyHandlers.ofString());
+
+            String json1 = response1.body();
+
+            JsonObject root1 = JsonParser.parseString(json1).getAsJsonObject();
+            JsonArray versionsJson1 = root1.getAsJsonArray("versions");
+
+            List<String> versions = new Gson().fromJson(
+                    versionsJson1,
+                    new TypeToken<List<String>>() {}.getType()
+            );
+
+            HttpRequest request2 = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.modrinth.com/v2/version/" + versions.get(versions.size() - 1)))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response2 = httpClient.send(request2, HttpResponse.BodyHandlers.ofString());
+
+            String json2 = response2.body();
+
+            JsonObject root2 = JsonParser.parseString(json2).getAsJsonObject();
+            String latest = root2.get("version_number").toString().replace("\"", "");
+
+            if (getDescription().getVersion().equalsIgnoreCase(latest)) {
+                getServer().getConsoleSender().sendMessage("§aLumenMC Monitor is up to date");
+            } else {
+                getServer().getConsoleSender().sendMessage("§cLumenMC Monitor is outdated, please download the newest version. §rYou're on §c" + getDescription().getVersion() + "§r the latest is §a" + latest + "§r");
+            }
+
+        } catch (IOException | InterruptedException e) {
+            getLogger().warning("Unable to check for updates: " + e);
+
+        }
     }
 
     // Get locale

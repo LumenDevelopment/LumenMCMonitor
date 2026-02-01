@@ -10,7 +10,14 @@
       "timestamp":"%lumenmc_timestamp%",
       "footer": {
         "text":"LumenMC Monitor %lumenmc_version%"
-      }
+      },
+      "fields":[
+        {
+          "name":"Server name",
+          "value":"%lumenmc_serverver%",
+          "inline":true
+        }
+      ]
     }
   ]
 }

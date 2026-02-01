@@ -4,9 +4,9 @@
   "embeds":[
     {
       "image":{"url":"https://cdn.lumenvm.cloud/lumenmc-banner.png"},
-      "title":"\uD83D\uDFE5 Server stop",
-      "description":"\uD83D\uDED1 Server is shutting down.",
-      "color":15158332,
+      "title":"Template",
+      "description":"Template",
+      "color":3447003,
       "timestamp":"%lumenmc_timestamp%",
       "footer": {
         "text":"LumenMC Monitor %lumenmc_version%"
