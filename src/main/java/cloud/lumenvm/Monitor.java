@@ -577,14 +577,19 @@ public class Monitor extends JavaPlugin implements Listener {
     @Override
     public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String alias, String @NonNull [] args) {
         List<String> list = new ArrayList<>();
+        List<String> webhooksNames = new ArrayList<>(Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList());
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 1) {
             list.add("test");
             list.add("reload");
             list.add("lang");
             list.add("webhook");
             list.add("config");
+            list.add("send");
             list.sort(null);
             return list;
+        }
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("send")) {
+            return webhooksNames;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("webhook")) {
             list.add("add");
@@ -593,7 +598,6 @@ public class Monitor extends JavaPlugin implements Listener {
             return list;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook") && args[1].equalsIgnoreCase("remove")) {
-            List<String> webhooksNames = new ArrayList<>(Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList());
             webhooksNames.remove("default");
             return webhooksNames;
         }

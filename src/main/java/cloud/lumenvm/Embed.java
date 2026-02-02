@@ -30,9 +30,6 @@ public class Embed {
 
         // Load JSON
         embed = readJson("embeds/" + name + ".json", "embeds/" + name + ".json");
-
-
-
     }
 
     private String readJson(String fileName, String child) {
