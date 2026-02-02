@@ -21,6 +21,11 @@
           "name":"First played",
           "value":"%player_first_played_formatted%",
           "inline":true
+        },
+        {
+          "name":"Server name",
+          "value":"%lumenmc_serverver%",
+          "inline":true
         }
       ]
     }

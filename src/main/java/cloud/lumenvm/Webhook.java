@@ -122,7 +122,7 @@ public class Webhook {
                     if (!confLoader.watchdogAlerted) {
                         confLoader.watchdogAlerted = true;
                         if (confLoader.embedsWatchdogEnabled) {
-                            sendJson(PlaceholderAPI.setPlaceholders(null, plugin.embedLoader.watchdog.replace("%lumenmc_watchdogmsg%", plugin.langLoader.get("watchdog_alert_message"))));
+                            sendJson(PlaceholderAPI.setPlaceholders(null, plugin.embeds.get("watchdog").embed.replace("%lumenmc_watchdogmsg%", plugin.langLoader.get("watchdog_alert_message"))));
                         } else {
                             enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + PlaceholderAPI.setPlaceholders(null, plugin.langLoader.get("watchdog_alert_message")));
                             if (plugin.debug)
@@ -134,7 +134,7 @@ public class Webhook {
                     if (confLoader.watchdogAlerted) {
                         confLoader.watchdogAlerted = false;
                         if (confLoader.embedsWatchdogEnabled) {
-                            sendJson(PlaceholderAPI.setPlaceholders(null, plugin.embedLoader.watchdog.replace("%lumenmc_watchdogmsg%", plugin.langLoader.get("watchdog_recovery_message"))));
+                            sendJson(PlaceholderAPI.setPlaceholders(null, plugin.embeds.get("watchdog").embed.replace("%lumenmc_watchdogmsg%", plugin.langLoader.get("watchdog_recovery_message"))));
                         } else {
                             enqueueIfAllowed("[" + Instant.now() + "] [WATCHDOG] " + PlaceholderAPI.setPlaceholders(null, plugin.langLoader.get("watchdog_recovery_message")));
                         }
@@ -302,7 +302,7 @@ public class Webhook {
                 if (batch.isEmpty()) return;
 
                 String combined = String.join("\n", batch);
-                List<String> payloads =  splitMessage(combined, webhook.confLoader.maxMessageLength);
+                List<String> payloads = splitMessage(combined, webhook.confLoader.maxMessageLength);
 
                 if (plugin.debug)
                     plugin.getLogger().info("Debug: Sending batch: " + batch.size() + " messages, payloads: " + payloads.size());

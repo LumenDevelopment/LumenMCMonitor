@@ -1,9 +1,10 @@
 plugins {
-    id 'java'
+    id 'java-library'
+    id 'maven-publish'
 }
 
 group = 'cloud.lumenvm'
-version = 'b1.1'
+version = 'b1.2'
 
 repositories {
     mavenCentral()
@@ -13,6 +14,11 @@ repositories {
     maven {url 'https://repo.extendedclip.com/releases/'}
 }
 
+java {
+    withSourcesJar()
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -20,6 +26,40 @@ dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT'
     implementation 'commons-io:commons-io:2.21.0'
     compileOnly 'me.clip:placeholderapi:2.11.7'
+}
+
+publishing {
+    publications {
+        gpr(MavenPublication) {
+            from components.java
+
+            groupId = group
+            artifactId = 'lumenmc-monitor'
+            version = version
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/LumenDevelopment/LumenMCMonitor")
+
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
+
+tasks.register("mystuff", Exec) {
+    group 'build'
+    commandLine './move.sh'
+}
+
+tasks.named("build") {
+    dependsOn 'mystuff'
+    dependsOn 'publishToMavenLocal'
 }
 
 test {
