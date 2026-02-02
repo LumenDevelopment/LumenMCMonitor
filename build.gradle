@@ -8,7 +8,7 @@ plugins {
 def dateVersion
 def now = new Date()
 def versionFormat = new SimpleDateFormat("dd-MM-yyyy-HHmmss")
-dateVersion = versionFormat.format(now)
+dateVersion = "dev" + versionFormat.format(now)
 
 println "Artifact version is set to $version"
 
