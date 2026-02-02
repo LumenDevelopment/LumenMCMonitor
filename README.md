@@ -30,6 +30,7 @@ It even notifies you when the server stops ticking!
 6. Localization
 7. Multi webhook support
 8. PlaceholderAPI support
+9. Addon support
 
 ## Commands
 - /lumenmc reload - reloads config
