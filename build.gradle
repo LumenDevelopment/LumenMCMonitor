@@ -1,7 +1,16 @@
+import java.text.SimpleDateFormat
+
 plugins {
     id 'java-library'
     id 'maven-publish'
 }
+
+def dateVersion
+def now = new Date()
+def versionFormat = new SimpleDateFormat("dd-MM-yyyy-HHmmss")
+dateVersion = versionFormat.format(now)
+
+println "Artifact version is set to $version"
 
 group = 'cloud.lumenvm'
 version = 'b1.2'
@@ -35,18 +44,20 @@ publishing {
 
             groupId = group
             artifactId = 'lumenmc-monitor'
-            version = version
+            version = dateVersion
         }
     }
 
+
     repositories {
         maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/LumenDevelopment/LumenMCMonitor")
+            name = "nexus"
+            allowInsecureProtocol true
+            url = uri("http://194.15.36.207:8081/repository/dev/")
 
             credentials {
-                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
-                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+                username = project.findProperty("nexus.user")
+                password = project.findProperty("nexus.pass")
             }
         }
     }
