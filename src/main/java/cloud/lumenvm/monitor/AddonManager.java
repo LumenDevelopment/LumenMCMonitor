@@ -1,4 +1,4 @@
-package cloud.lumenvm;
+package cloud.lumenvm.monitor;
 
 import cloud.lumenvm.api.MonitorAPI;
 import cloud.lumenvm.api.MonitorAddon;

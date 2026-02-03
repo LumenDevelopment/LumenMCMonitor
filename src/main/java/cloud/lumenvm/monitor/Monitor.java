@@ -1,4 +1,4 @@
-package cloud.lumenvm;
+package cloud.lumenvm.monitor;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;

@@ -1,4 +1,4 @@
-package cloud.lumenvm;
+package cloud.lumenvm.monitor;
 
 import java.util.List;
 import java.util.logging.Level;

@@ -1,4 +1,4 @@
-package cloud.lumenvm;
+package cloud.lumenvm.monitor;
 
 import org.apache.commons.io.FileUtils;
 import org.bukkit.configuration.file.FileConfiguration;

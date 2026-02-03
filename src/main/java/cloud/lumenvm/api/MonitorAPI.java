@@ -1,7 +1,7 @@
 package cloud.lumenvm.api;
 
-import cloud.lumenvm.Embed;
-import cloud.lumenvm.Monitor;
+import cloud.lumenvm.monitor.Embed;
+import cloud.lumenvm.monitor.Monitor;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;

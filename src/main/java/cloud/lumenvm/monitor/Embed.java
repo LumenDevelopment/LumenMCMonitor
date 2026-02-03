@@ -1,4 +1,4 @@
-package cloud.lumenvm;
+package cloud.lumenvm.monitor;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.Map;
 
 public class Embed {
     // Plugin

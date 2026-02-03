@@ -12,7 +12,7 @@ dateVersion = "dev" + versionFormat.format(now)
 
 println "Artifact version is set to $version"
 
-group = 'cloud.lumenvm'
+group = 'cloud.lumenvm.monitor'
 version = 'b1.2'
 
 repositories {
