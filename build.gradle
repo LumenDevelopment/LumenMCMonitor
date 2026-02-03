@@ -72,6 +72,12 @@ tasks.named("build") {
     dependsOn 'publishToMavenLocal'
 }
 
+tasks.javadoc{
+    include("cloud/lumenvm/api/**")
+    include("cloud/lumenvm/TemplateAddon.java")
+    exclude("**/internal/**")
+}
+
 test {
     useJUnitPlatform()
 }
