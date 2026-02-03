@@ -52,8 +52,7 @@ publishing {
     repositories {
         maven {
             name = "nexus"
-            allowInsecureProtocol true
-            url = uri("http://194.15.36.207:8081/repository/dev/")
+            url = uri("https://maven.lumenvm.cloud/repository/dev/")
 
             credentials {
                 username = project.findProperty("nexus.user")
