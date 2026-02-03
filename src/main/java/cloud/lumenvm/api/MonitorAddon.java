@@ -11,6 +11,7 @@ public interface MonitorAddon {
     /**
      * This will trigger when the addon loads. You can set api, plugin here.
      * You also <strong>must register a Bukkit event</strong> for the addon to work.
+     * @param api the {@link MonitorAPI}
      */
     void onLoad(MonitorAPI api);
 

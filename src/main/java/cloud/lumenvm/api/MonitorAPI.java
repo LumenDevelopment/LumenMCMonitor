@@ -15,18 +15,25 @@ public class MonitorAPI {
     /**Available embeds.*/
     private final Map<String, Embed> embeds;
 
-
+    /***
+     * @param plugin main plugin
+     * @param embeds available embeds
+     */
     public MonitorAPI(Monitor plugin, Map<String, Embed> embeds) {
         this.plugin = plugin;
         this.embeds = embeds;
     }
 
-    /**Send {@link java.lang.String} messages*/
+    /**Send messages
+     * @param content {@link java.lang.String} content
+     */
     public void fireContent(String content) {
         plugin.fireContent(content);
     }
 
-    /**Send embeds. To load them use {@link #getEmbeds() getEmbeds().get("my_embed")} (a JSON embed has to be in the embeds folder).*/
+    /**Send embeds. To load them use {@link #getEmbeds() getEmbeds().get("my_embed")} (a JSON embed has to be in the embeds folder).
+     * @param embedJson the embed JSON
+     */
     public void fireEmbed(String embedJson) {
         plugin.fireEmbed(embedJson);
     }
