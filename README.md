@@ -54,6 +54,10 @@ Pull requests are welcome.
 ANY feedback appreciated.
 If you find issues you can open new issue here or open a ticket at our discord.
 
+## Creating addons
+This plugin supports addons. You can view a template repo [here](https://github.com/LumenDevelopment/LumenMCMonitor-AddonTemplate).
+[Click to view more](ADDONS.md)
+
 ## Links
 - <a href="https://www.lumenvm.cloud/" target="_blank">Lumen Website</a>
 - <a href="https://discord.gg/zUueFq98bB/" target="_blank">Lumen Development Discord</a>
