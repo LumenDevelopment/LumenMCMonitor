@@ -7,7 +7,7 @@ plugins {
 
 def dateVersion
 def now = new Date()
-def versionFormat = new SimpleDateFormat("dd-MM-yyyy-HHmmss")
+def versionFormat = new SimpleDateFormat("yyyy-MM-dd-HHmmss")
 dateVersion = "dev" + versionFormat.format(now)
 
 println "Artifact version is set to $version"
@@ -42,7 +42,7 @@ publishing {
         gpr(MavenPublication) {
             from components.java
 
-            groupId = group
+            groupId = 'cloud.lumenvm'
             artifactId = 'lumenmc-monitor'
             version = dateVersion
         }
