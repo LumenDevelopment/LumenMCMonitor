@@ -10,8 +10,16 @@ depend: ["PlaceholderAPI"]
 commands:
   lumenmc:
     description: Commands for LumenMC Monitor
-    usage: /lumenmc test|lang|reload|webhook|config|send (For full usage visit plugin website)
+    usage: /lumenmc test|lang|reload|webhook|config|send|user (For full usage visit plugin website)
     permission: lumenmc.admin
+  lumenmc user:
+    description: User webhooks
+    usage: /lumenmc user add|remove|config|list
+    permission: lumenmc.player
 permissions:
   lumenmc.admin:
     default: op
+    children:
+      lumenmc.player: true
+  lumenmc.player:
+    default: not op

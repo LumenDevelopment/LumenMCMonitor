@@ -8,9 +8,11 @@ import com.google.gson.reflect.TypeToken;
 import me.clip.placeholderapi.events.ExpansionsLoadedEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -75,8 +77,10 @@ public class Monitor extends JavaPlugin implements Listener {
 
         // Set plugins
         Webhook.setPlugin(this);
+        UserWebhook.setPlugin(this);
         Embed.setPlugin(this);
         ConfigLoader.setPlugin(this);
+        UserConfigLoader.setPlugin(this);
         LanguageLoader.setPlugin(this);
 
         // Config
@@ -131,11 +135,16 @@ public class Monitor extends JavaPlugin implements Listener {
         if (webhooksSection != null) {
             Set<String> webhooksNames = webhooksSection.getKeys(false);
             for (String name : webhooksNames) {
-                webhooks.add(new Webhook(name));
+                webhooks.add(new Webhook(name, false, null));
             }
         } else {
             getLogger().severe("Failed to load webhooks in config.yml");
             getServer().getPluginManager().disablePlugin(this);
+        }
+
+        List<String> userWebhookList = getConfig().getStringList("user_configs");
+        for (String uuid : userWebhookList) {
+            webhooks.add(new UserWebhook(UUID.fromString(uuid), null));
         }
 
         // Check if config failed to load
@@ -322,7 +331,10 @@ public class Monitor extends JavaPlugin implements Listener {
         if (args.length == 0) {
             return false;
         }
-        List<String> webhooksNames = Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList();
+        List<String> webhooksNames = new ArrayList<>();
+        for (Webhook webhook : webhooks) {
+            webhooksNames.add(webhook.confLoader.name);
+        }
 
 
         if (args[0].equalsIgnoreCase("test")) {
@@ -568,6 +580,31 @@ public class Monitor extends JavaPlugin implements Listener {
             }
 
             sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("user")) {
+            if (args.length == 1) {
+                sender.sendMessage("Use: /lumenmc user add|remove|config|list");
+                return true;
+            }
+
+            if (args[1].equalsIgnoreCase("add")) {
+                if (args.length == 2) {
+                    sender.sendMessage("Use: /lumenmc user add [webhookUrl]");
+                    return true;
+                }
+                if (sender instanceof Player) {
+                    webhooks.add(new UserWebhook(Objects.requireNonNull(((Player) sender).getPlayer()).getUniqueId(), args[2]));
+                    getConfig().set("user_configs", getConfig().getStringList("user_configs").add(Objects.requireNonNull(((Player) sender).getPlayer()).getUniqueId().toString()));
+                } else {
+                    sender.sendMessage("Only players can execute this command!");
+                }
+
+                return true;
+            }
+
+            sender.sendMessage("Use: /lumenmc user add|remove|config|list");
             return true;
         }
         return false;

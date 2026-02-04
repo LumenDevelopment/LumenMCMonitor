@@ -5,6 +5,8 @@ import com.google.gson.annotations.SerializedName;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.jspecify.annotations.Nullable;
 
 import java.io.*;
 import java.net.URI;
@@ -65,9 +67,18 @@ public class Webhook {
         }
     };
 
-    Webhook(String name) {
+    public final boolean userWebhook;
+
+    Webhook(String name, boolean userWebhook, @Nullable UUID uuid) {
+
+        this.userWebhook = userWebhook;
+
         // Set config loader by name
-        this.confLoader = new ConfigLoader(name);
+        if (userWebhook) {
+            this.confLoader = new UserConfigLoader(uuid);
+        } else {
+            this.confLoader = new ConfigLoader(name, false);
+        }
 
         // Check if failed to load config
         if (confLoader.failedToLoadConfig) {
@@ -109,7 +120,7 @@ public class Webhook {
         if (plugin.debug) plugin.getLogger().info("Debug: Handlers connected in onEnable(); queueing logs");
 
         // Watchdog
-        if (confLoader.watchdogEnabled) {
+        if (confLoader.watchdogEnabled && !userWebhook) {
             // Heartbeat
             watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(plugin, () -> confLoader.lastTickNanos = System.nanoTime(), 0L, 1L).getTaskId();
 

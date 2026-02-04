@@ -1,0 +1,18 @@
+# URL of discord webhook (Do not change if you're using LumenMC in Pterodactyl)
+url: https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX
+
+# Send server start/stop messages
+send_server_start_stop: true
+
+# Embeds for start and stop messages
+embeds_start_stop_enabled: true
+
+##############################
+########## Advanced ##########
+##############################
+
+# Filters
+ignore_patterns: [ ]
+
+# Remove mentions
+remove_mentions: true
