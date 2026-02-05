@@ -65,7 +65,9 @@ public class UserWebhook extends Webhook{
     public static void removeUserWebhook(UUID playerUUID) {
         File userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
         userdata.delete();
-        plugin.getConfig().set("user_configs", plugin.getConfig().getStringList("user_configs").remove(playerUUID.toString()));
+        List<String> userConfigs = plugin.getConfig().getStringList("user_configs");
+        userConfigs.remove(playerUUID.toString());
+        plugin.getConfig().set("user_configs", userConfigs);
         plugin.saveConfig();
         plugin.pluginReload();
     }

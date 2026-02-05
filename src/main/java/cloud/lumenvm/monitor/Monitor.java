@@ -58,7 +58,7 @@ public class Monitor extends JavaPlugin implements Listener {
     private static HttpClient httpClient;
 
     // Lists
-    public List<Webhook> webhooks;
+    public Map<String, Webhook> webhooks;
     Collection<String> requiredExpansions = new ArrayList<>();
 
     // Help variables
@@ -96,7 +96,7 @@ public class Monitor extends JavaPlugin implements Listener {
         langLoader = new LanguageLoader(this);
 
         // Webhooks
-        webhooks = new ArrayList<>();
+        webhooks = new HashMap<>();
 
         embeds = new HashMap<>();
 
@@ -134,7 +134,7 @@ public class Monitor extends JavaPlugin implements Listener {
         if (webhooksSection != null) {
             Set<String> webhooksNames = webhooksSection.getKeys(false);
             for (String name : webhooksNames) {
-                webhooks.add(new Webhook(name, false, null));
+                webhooks.put(name , new Webhook(name, false, null));
             }
         } else {
             getLogger().severe("Failed to load webhooks in config.yml");
@@ -143,11 +143,11 @@ public class Monitor extends JavaPlugin implements Listener {
 
         List<String> userWebhookList = getConfig().getStringList("user_configs");
         for (String uuid : userWebhookList) {
-            webhooks.add(new UserWebhook(UUID.fromString(uuid)));
+            webhooks.put(uuid , new UserWebhook(UUID.fromString(uuid)));
         }
 
         // Check if config failed to load
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             if (webhook.confLoader.failedToLoadConfig) {
                 return;
             }
@@ -178,13 +178,13 @@ public class Monitor extends JavaPlugin implements Listener {
 
         if (webhooks != null) {
             // Send stop Embed
-            for (Webhook webhook : webhooks) {
+            for (Webhook webhook : webhooks.values()) {
                 if (!webhook.confLoader.failedToLoadConfig && webhook.confLoader.embedsStartStopEnabled && !reloading && !starting) {
                     webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embeds.get("stop").embed));
                 }
             }
             // Remove webhooks if there are any
-            for (Webhook webhook : webhooks) {
+            for (Webhook webhook : webhooks.values()) {
                 webhook.removeAllWebhooks();
             }
 
@@ -206,7 +206,7 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onExpansionsLoaded(ExpansionsLoadedEvent event) {
         // Check if required PAPI expansions are registered
         if (PlaceholderAPI.isRegistered("Player") && PlaceholderAPI.isRegistered("Server") && starting) {
-            for (Webhook webhook : webhooks) {
+            for (Webhook webhook : webhooks.values()) {
                 if (!webhook.confLoader.sendServerLoad) continue;
                 if (webhook.confLoader.embedsStartStopEnabled) {
                     webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embeds.get("start").embed));
@@ -225,7 +225,7 @@ public class Monitor extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
         // Send chat if enabled
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             if (!webhook.confLoader.sendChat) continue;
             String message = event.getMessage();
             String content = prettyTime() + langLoader.get("on_player_chat");
@@ -238,7 +238,7 @@ public class Monitor extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
         // Send command if enabled
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             if (!webhook.confLoader.sendPlayerCommands) continue;
             String cmd = event.getMessage();
             String content = prettyTime() + langLoader.get("on_player_command");
@@ -251,7 +251,7 @@ public class Monitor extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onServerCommand(ServerCommandEvent event) {
         // Send command if enabled
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             if (!webhook.confLoader.sendConsoleCommands) continue;
             String cmd = event.getCommand();
             String content = prettyTime() + langLoader.get("on_server_command");
@@ -264,7 +264,7 @@ public class Monitor extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onJoin(PlayerJoinEvent event) {
         // Send join (embed) if enabled
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             if (!webhook.confLoader.sendJoinQuit) continue;
             if (webhook.confLoader.embedsJoinQuitEnabled){
                 webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embeds.get("join").embed));
@@ -279,7 +279,7 @@ public class Monitor extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onQuit(PlayerQuitEvent event) {
         // Send quit (embed) if enabled
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             if (!webhook.confLoader.sendJoinQuit) continue;
             if (webhook.confLoader.embedsJoinQuitEnabled) {
                 webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getPlayer(), embeds.get("quit").embed));
@@ -295,7 +295,7 @@ public class Monitor extends JavaPlugin implements Listener {
     public void onDeath(PlayerDeathEvent event) {
         // Send death (embed) if enabled
         String msg = event.getDeathMessage();
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             if (!webhook.confLoader.sendDeaths) continue;
             if (msg == null || msg.isBlank()) return;
             if (webhook.confLoader.embedsDeathsEnabled) {
@@ -312,7 +312,7 @@ public class Monitor extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onGamemodeChange(PlayerGameModeChangeEvent event) {
         // Send gamemode change if enabled
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             if (!webhook.confLoader.sendGamemodeChanges) continue;
             GameMode newMode = event.getNewGameMode();
             String content = prettyTime() + langLoader.get("on_player_gamemode_change");
@@ -331,7 +331,7 @@ public class Monitor extends JavaPlugin implements Listener {
             return false;
         }
         List<String> webhooksNames = new ArrayList<>();
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             webhooksNames.add(webhook.confLoader.name);
         }
 
@@ -339,7 +339,7 @@ public class Monitor extends JavaPlugin implements Listener {
         if (args[0].equalsIgnoreCase("test")) {
             String content = "🔧 LumenMC test message in " + getDescription().getVersion() +
                     " @ " + Instant.now();
-            for (Webhook webhook : webhooks) {
+            for (Webhook webhook : webhooks.values()) {
                 webhook.queue.offer(content);
             }
             sender.sendMessage("§aTesting message sent...");
@@ -556,7 +556,7 @@ public class Monitor extends JavaPlugin implements Listener {
             }
 
             if (webhooksNames.contains(args[1])) {
-                for (Webhook webhook : webhooks) {
+                for (Webhook webhook : webhooks.values()) {
                     for (String name : webhooksNames) {
                         if (name.equalsIgnoreCase(args[1])) break;
                         sender.sendMessage("Use: /lumenmc send [webhook] [content]");
@@ -595,7 +595,6 @@ public class Monitor extends JavaPlugin implements Listener {
                 }
                 if (sender instanceof Player) {
                     UserWebhook.addUserWebhook(((Player) sender).getUniqueId(), args[2]);
-                    getConfig().set("user_configs", getConfig().getStringList("user_configs").add(Objects.requireNonNull(((Player) sender).getPlayer()).getUniqueId().toString()));
                 } else {
                     sender.sendMessage("Only players can execute this command!");
                 }
@@ -690,13 +689,13 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Help methods
     public void fireContent(String content) {
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             webhook.enqueueIfAllowed(content);
         }
     }
 
     public void fireEmbed(String embedJson) {
-        for (Webhook webhook : webhooks) {
+        for (Webhook webhook : webhooks.values()) {
             webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedJson));
         }
     }

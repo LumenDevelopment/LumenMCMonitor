@@ -302,7 +302,7 @@ public class Webhook {
         if (!drainLock.compareAndSet(false, true)) {
             return;
         }
-        for (Webhook webhook : plugin.webhooks) {
+        for (Webhook webhook : plugin.webhooks.values()) {
             try {
                 List<String> batch = new ArrayList<>(webhook.confLoader.maxBatchSize);
                 while (batch.size() < webhook.confLoader.maxBatchSize) {
