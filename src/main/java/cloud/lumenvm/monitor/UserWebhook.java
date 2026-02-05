@@ -4,29 +4,37 @@ import org.apache.commons.io.FileUtils;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.*;
-import java.util.Objects;
+import java.util.List;
 import java.util.UUID;
 
 public class UserWebhook extends Webhook{
 
     private static Monitor plugin;
 
-    File userdataDirectory;
+    static File userdataDirectory;
     File userdata;
 
-    UserWebhook(UUID playerUUID, String url) {
+    UUID playerUUID;
+
+    UserWebhook(UUID playerUUID) {
         super(null, true, playerUUID);
 
-        userdataDirectory = new File(plugin.getDataFolder(), "userdata/");
-        userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
+        this.playerUUID = playerUUID;
 
-        if (url != null) {
-            addUserWebhook(url);
+        if (userdataDirectory == null) {
+            userdataDirectory = new File(plugin.getDataFolder(), "userdata/");
         }
+        userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
     }
 
-    public void addUserWebhook(String url) {
+    public static void addUserWebhook(UUID playerUUID, String url) {
+        if (userdataDirectory == null) {
+            userdataDirectory = new File(plugin.getDataFolder(), "userdata/");
+        }
+
         if (!userdataDirectory.exists()) userdataDirectory.mkdir();
+
+        File userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
 
         if (!userdata.exists()) {
             try {
@@ -46,6 +54,20 @@ public class UserWebhook extends Webhook{
         } catch (IOException e) {
             plugin.getLogger().severe("Error when saving user webhook config: " + e);
         }
+
+        List<String> userConfigs = plugin.getConfig().getStringList("user_configs");
+        userConfigs.add(playerUUID.toString());
+        plugin.getConfig().set("user_configs", userConfigs);
+        plugin.saveConfig();
+        plugin.pluginReload();
+    }
+
+    public static void removeUserWebhook(UUID playerUUID) {
+        File userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
+        userdata.delete();
+        plugin.getConfig().set("user_configs", plugin.getConfig().getStringList("user_configs").remove(playerUUID.toString()));
+        plugin.saveConfig();
+        plugin.pluginReload();
     }
 
     public static void setPlugin(Monitor plugin) {

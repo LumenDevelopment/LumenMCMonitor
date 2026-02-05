@@ -8,7 +8,6 @@ import com.google.gson.reflect.TypeToken;
 import me.clip.placeholderapi.events.ExpansionsLoadedEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
@@ -144,7 +143,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
         List<String> userWebhookList = getConfig().getStringList("user_configs");
         for (String uuid : userWebhookList) {
-            webhooks.add(new UserWebhook(UUID.fromString(uuid), null));
+            webhooks.add(new UserWebhook(UUID.fromString(uuid)));
         }
 
         // Check if config failed to load
@@ -595,12 +594,17 @@ public class Monitor extends JavaPlugin implements Listener {
                     return true;
                 }
                 if (sender instanceof Player) {
-                    webhooks.add(new UserWebhook(Objects.requireNonNull(((Player) sender).getPlayer()).getUniqueId(), args[2]));
+                    UserWebhook.addUserWebhook(((Player) sender).getUniqueId(), args[2]);
                     getConfig().set("user_configs", getConfig().getStringList("user_configs").add(Objects.requireNonNull(((Player) sender).getPlayer()).getUniqueId().toString()));
                 } else {
                     sender.sendMessage("Only players can execute this command!");
                 }
-
+                return true;
+            }
+            if (args[1].equalsIgnoreCase("remove")) {
+                if (sender instanceof Player) {
+                    UserWebhook.removeUserWebhook(((Player) sender).getUniqueId());
+                }
                 return true;
             }
 

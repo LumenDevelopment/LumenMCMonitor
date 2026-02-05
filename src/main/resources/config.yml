@@ -86,7 +86,8 @@ webhooks:
     ##############################
 
     # Filters
-    ignore_patterns: [ ]
+    ignore_patterns:
+      - # a bad word
 
     # Maximum amount of messages in one batch
     max_batch_size: 50
