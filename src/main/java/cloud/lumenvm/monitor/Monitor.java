@@ -619,6 +619,10 @@ public class Monitor extends JavaPlugin implements Listener {
                 return true;
             }
             if (args[1].equalsIgnoreCase("remove")) {
+                if (args.length == 2) {
+                    sender.sendMessage("Use: /lumenmc user remove webhook name");
+                    return true;
+                }
                 if (sender instanceof Player) {
                     UserWebhook.removeUserWebhook(((Player) sender).getUniqueId(), args[2]);
                 }

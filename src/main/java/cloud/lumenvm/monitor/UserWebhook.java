@@ -4,10 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.*;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 public class UserWebhook extends Webhook{
 
@@ -18,10 +15,14 @@ public class UserWebhook extends Webhook{
 
     UUID playerUUID;
 
-    static Map<UUID, Integer> userWebhookCount;
+    public static Map<UUID, Integer> userWebhookCount;
 
     UserWebhook(String name, UUID playerUUID) {
         super(name, true, playerUUID);
+
+        userWebhookCount = new HashMap<>();
+        userWebhookCount.putIfAbsent(playerUUID, 0);
+        userWebhookCount.put(playerUUID, userWebhookCount.get(playerUUID) + 1);
 
         this.playerUUID = playerUUID;
 
@@ -47,10 +48,6 @@ public class UserWebhook extends Webhook{
         userConfig.set(name, template);
         userConfig.set(name + ".url", url);
 
-        userWebhookCount.putIfAbsent(playerUUID, 0);
-
-        userWebhookCount.put(playerUUID, userWebhookCount.get(playerUUID) + 1);
-
         try {
             userConfig.save(userdata);
         } catch (IOException e) {
@@ -72,12 +69,17 @@ public class UserWebhook extends Webhook{
 
         webhookConfig.set(name, null);
 
-        userWebhookCount.put(playerUUID, userWebhookCount.get(playerUUID) - 1);
+        try {
+            webhookConfig.save(userdata);
+        } catch (IOException e) {
+            plugin.getLogger().warning("Error when removing user webhook: " + e);
+        }
 
         List<String> userConfigs = plugin.getConfig().getStringList("user_configs");
         if (userConfigs.contains(playerUUID.toString()) && userWebhookCount.get(playerUUID) == 1) {
             userConfigs.remove(playerUUID.toString());
             plugin.getConfig().set("user_configs", userConfigs);
+            userdata.delete();
         }
         plugin.saveConfig();
         plugin.pluginReload();
