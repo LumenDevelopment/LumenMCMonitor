@@ -5,7 +5,6 @@ import com.google.gson.annotations.SerializedName;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
 import java.io.*;
@@ -75,7 +74,7 @@ public class Webhook {
 
         // Set config loader by name
         if (userWebhook) {
-            this.confLoader = new UserConfigLoader(uuid);
+            this.confLoader = new UserConfigLoader(name, uuid);
         } else {
             this.confLoader = new ConfigLoader(name, false);
         }

@@ -12,21 +12,20 @@ public class UserConfigLoader extends ConfigLoader{
     YamlConfiguration config;
     UUID playerUUID;
 
-    public UserConfigLoader(UUID playerUUID) {
-        super("user", true);
-
+    public UserConfigLoader(String section, UUID playerUUID) {
+        super(null, true);
         this.playerUUID = playerUUID;
-        this.name = plugin.getServer().getOfflinePlayer(playerUUID).getName();
+        this.name = plugin.getServer().getOfflinePlayer(playerUUID).getName() + ": " + section;
 
         File userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
 
         this.config = YamlConfiguration.loadConfiguration(userdata);
 
-        this.url = config.getString("url");
-        this.sendServerLoad = config.getBoolean("send_server_start_stop");
-        this.embedsStartStopEnabled = config.getBoolean("embeds_start_stop_enabled");
-        this.ignorePatterns = config.getStringList("ignore_patterns");
-        this.removeMentions = config.getBoolean("remove_mentions");
+        this.url = config.getString(section + ".url");
+        this.sendServerLoad = config.getBoolean(section + ".send_server_start_stop");
+        this.embedsStartStopEnabled = config.getBoolean(section + ".embeds_start_stop_enabled");
+        this.ignorePatterns = config.getStringList(section + ".ignore_patterns");
+        this.removeMentions = config.getBoolean(section + ".remove_mentions");
 
         this.failedToLoadConfig = false;
     }

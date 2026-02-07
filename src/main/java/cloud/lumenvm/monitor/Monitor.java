@@ -11,6 +11,7 @@ import org.bukkit.GameMode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,6 +24,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.jspecify.annotations.NonNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -100,6 +102,8 @@ public class Monitor extends JavaPlugin implements Listener {
 
         embeds = new HashMap<>();
 
+        UserWebhook.userWebhookCount = new HashMap<>();
+
         // Add required PAPI expansions
         requiredExpansions.add("server");
         requiredExpansions.add("player");
@@ -143,7 +147,15 @@ public class Monitor extends JavaPlugin implements Listener {
 
         List<String> userWebhookList = getConfig().getStringList("user_configs");
         for (String uuid : userWebhookList) {
-            webhooks.put(uuid , new UserWebhook(UUID.fromString(uuid)));
+            File userdata = new File(getDataFolder(), "userdata/" + uuid + ".yml");
+            YamlConfiguration userConfig = YamlConfiguration.loadConfiguration(userdata);
+            ConfigurationSection webhooksUserSection = userConfig.getConfigurationSection("");
+            if (webhooksUserSection != null) {
+                Set<String> webhooksUserNames = webhooksUserSection.getKeys(false);
+                for (String name : webhooksUserNames) {
+                    webhooks.put(name + uuid, new UserWebhook(name, UUID.fromString(uuid)));
+                }
+            }
         }
 
         // Check if config failed to load
@@ -174,7 +186,9 @@ public class Monitor extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
 
-        manager.unLoad();
+        if (manager != null) {
+            manager.unLoad();
+        }
 
         if (webhooks != null) {
             // Send stop Embed
@@ -593,8 +607,12 @@ public class Monitor extends JavaPlugin implements Listener {
                     sender.sendMessage("Use: /lumenmc user add [webhookUrl]");
                     return true;
                 }
+                if (!webhookTest(args[3])) {
+                    sender.sendMessage("Webhook url is invalid!");
+                    return true;
+                }
                 if (sender instanceof Player) {
-                    UserWebhook.addUserWebhook(((Player) sender).getUniqueId(), args[2]);
+                    UserWebhook.addUserWebhook(((Player) sender).getUniqueId(), args[2], args[3]);
                 } else {
                     sender.sendMessage("Only players can execute this command!");
                 }
@@ -602,7 +620,7 @@ public class Monitor extends JavaPlugin implements Listener {
             }
             if (args[1].equalsIgnoreCase("remove")) {
                 if (sender instanceof Player) {
-                    UserWebhook.removeUserWebhook(((Player) sender).getUniqueId());
+                    UserWebhook.removeUserWebhook(((Player) sender).getUniqueId(), args[2]);
                 }
                 return true;
             }
