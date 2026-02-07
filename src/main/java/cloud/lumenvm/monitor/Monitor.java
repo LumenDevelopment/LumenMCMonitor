@@ -620,13 +620,28 @@ public class Monitor extends JavaPlugin implements Listener {
             }
             if (args[1].equalsIgnoreCase("remove")) {
                 if (args.length == 2) {
-                    sender.sendMessage("Use: /lumenmc user remove webhook name");
+                    sender.sendMessage("Use: /lumenmc user remove [webhookName]");
                     return true;
                 }
                 if (sender instanceof Player) {
                     UserWebhook.removeUserWebhook(((Player) sender).getUniqueId(), args[2]);
                 }
                 return true;
+            }
+            if (args[1].equalsIgnoreCase("list")) {
+                List<String> userWebhooks = new ArrayList<>();
+                if (sender instanceof Player) {
+                    for (String name : webhooksNames) {
+                        if (name.contains(sender.getName())) {
+                            name = name.replace(sender.getName() + "_", "");
+                            userWebhooks.add(name);
+                        }
+                    }
+                    for (int i = 0; i < userWebhooks.size(); i++) {
+                        sender.sendMessage("[§a" + (i + 1) + "§r.] " + userWebhooks.get(i));
+                    }
+                    return true;
+                }
             }
 
             sender.sendMessage("Use: /lumenmc user add|remove|config|list");
@@ -639,7 +654,10 @@ public class Monitor extends JavaPlugin implements Listener {
     @Override
     public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String alias, String @NonNull [] args) {
         List<String> list = new ArrayList<>();
-        List<String> webhooksNames = new ArrayList<>(Objects.requireNonNull(getConfig().getConfigurationSection("webhooks")).getKeys(false).stream().toList());
+        List<String> webhooksNames = new ArrayList<>();
+        for (Webhook webhook : webhooks.values()) {
+            webhooksNames.add(webhook.confLoader.name);
+        }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 1) {
             list.add("test");
             list.add("reload");
@@ -647,6 +665,7 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("webhook");
             list.add("config");
             list.add("send");
+            list.add("user");
             list.sort(null);
             return list;
         }
@@ -659,9 +678,26 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("list");
             return list;
         }
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("user")) {
+            list.add("add");
+            list.add("remove");
+            list.add("list");
+            return list;
+        }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook") && args[1].equalsIgnoreCase("remove")) {
             webhooksNames.remove("default");
             return webhooksNames;
+        }
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("user") && args[1].equalsIgnoreCase("remove")) {
+            if (sender instanceof Player) {
+                for (String name : webhooksNames) {
+                    if (name.contains(sender.getName())) {
+                        name = name.replace(sender.getName() + "_", "");
+                        list.add(name);
+                    }
+                }
+            }
+            return list;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("config")) {
             list = getConfig().getKeys(true).stream().toList();

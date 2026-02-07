@@ -1,7 +1,6 @@
 package cloud.lumenvm.monitor;
 
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.util.UUID;
@@ -15,7 +14,7 @@ public class UserConfigLoader extends ConfigLoader{
     public UserConfigLoader(String section, UUID playerUUID) {
         super(null, true);
         this.playerUUID = playerUUID;
-        this.name = plugin.getServer().getOfflinePlayer(playerUUID).getName() + ": " + section;
+        this.name = plugin.getServer().getOfflinePlayer(playerUUID).getName() + "_" + section;
 
         File userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
 
