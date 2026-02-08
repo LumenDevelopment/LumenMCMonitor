@@ -544,6 +544,16 @@ public class Monitor extends JavaPlugin implements Listener {
                         return true;
                     }
                     if (args.length == 3) {
+                        if (args[1].equalsIgnoreCase("webhooks")) {
+                            sender.sendMessage("§cYou can't edit that");
+                            return true;
+                        }
+                        for (String name : webhooksNames) {
+                            if (args[1].equalsIgnoreCase("webhooks." + name)) {
+                                sender.sendMessage("§cYou can't edit that");
+                                return true;
+                            }
+                        }
                         if (args[1].contains("ignore_patterns")) {
                             List<String> filter = getConfig().getStringList(args[1]);
                             if (filter.contains(args[2])) {
@@ -655,6 +665,76 @@ public class Monitor extends JavaPlugin implements Listener {
                 }
                 return true;
             }
+            if (args[0].equalsIgnoreCase("config")) {
+                if (args.length == 1) {
+                    sender.sendMessage("Use: /webhook config [key] [value]");
+                    return true;
+                }
+                File userdata = new File(getDataFolder(), "userdata/" + getUUID(sender.getName()) + ".yml");
+                YamlConfiguration config = YamlConfiguration.loadConfiguration(userdata);
+                if (args.length == 2) {
+                    sender.sendMessage("§aThe value of §r" + args[1] + " §ais §r" + Objects.requireNonNull(config.get(args[1])));
+                    return true;
+                }
+                if (args.length == 3) {
+                    for (String name : userWebhookNames) {
+                        if (args[1].equalsIgnoreCase(name.substring(0, name.length() - 37))) {
+                            sender.sendMessage("§cYou can't edit that");
+                            return true;
+                        }
+                    }
+                    if (args[1].contains("ignore_patterns")) {
+                        List<String> filter = config.getStringList(args[1]);
+                        if (filter.contains(args[2])) {
+                            filter.remove(args[2]);
+                        } else {
+                            filter.add(args[2]);
+                        }
+                        config.set(args[1], filter);
+                        try {
+                            config.save(userdata);
+                        } catch (IOException e) {
+                            getLogger().severe("Error when saving config: " + e);
+                        }
+                        pluginReload();
+                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
+                        return true;
+                    }
+                    if (args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false")) {
+                        boolean option = Boolean.parseBoolean(args[2]);
+                        config.set(args[1], option);
+                        try {
+                            config.save(userdata);
+                        } catch (IOException e) {
+                            getLogger().severe("Error when saving config: " + e);
+                        }
+                        pluginReload();
+                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
+                        return true;
+                    }
+                    try {
+                        int number = Integer.parseInt(args[2]);
+                        config.set(args[1], number);
+                        try {
+                            config.save(userdata);
+                        } catch (IOException e) {
+                            getLogger().severe("Error when saving config: " + e);
+                        }
+                        pluginReload();
+                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
+                    } catch (Exception e) {
+                        config.set(args[1], args[2]);
+                        try {
+                            config.save(userdata);
+                        } catch (IOException ee) {
+                            getLogger().severe("Error when saving config: " + ee);
+                        }
+                        pluginReload();
+                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
+                    }
+                    return true;
+                }
+            }
             sender.sendMessage("Use: /webhook add|remove|config|list");
             return true;
         } else {
@@ -694,6 +774,7 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("add");
             list.add("remove");
             list.add("list");
+            list.add("config");
             return list;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook") && args[1].equalsIgnoreCase("remove")) {
@@ -702,6 +783,15 @@ public class Monitor extends JavaPlugin implements Listener {
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("config")) {
             list = getConfig().getKeys(true).stream().toList();
+            return list;
+        }
+        if (command.getName().equalsIgnoreCase("webhook") && args.length == 2 && args[0].equalsIgnoreCase("config")) {
+            list = getConfig().getKeys(true).stream().toList();
+            if (sender instanceof Player) {
+                File userdata = new File(getDataFolder(), "userdata/" + getUUID(sender.getName()) + ".yml");
+                YamlConfiguration config = YamlConfiguration.loadConfiguration(userdata);
+                list = config.getKeys(true).stream().toList();
+            }
             return list;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("lang")) {
@@ -836,6 +926,12 @@ public class Monitor extends JavaPlugin implements Listener {
             getLogger().warning("Unable to check for updates: " + e);
 
         }
+    }
+
+    private String getUUID(String name) {
+        Player player = getServer().getPlayer(name);
+        assert player != null;
+        return player.getUniqueId().toString();
     }
 
     // Get locale
