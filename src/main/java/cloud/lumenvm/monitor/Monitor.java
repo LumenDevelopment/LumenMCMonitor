@@ -61,6 +61,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Lists
     public Map<String, Webhook> webhooks;
+    public List<String> userWebhookNames;
     Collection<String> requiredExpansions = new ArrayList<>();
 
     // Help variables
@@ -146,6 +147,7 @@ public class Monitor extends JavaPlugin implements Listener {
         }
 
         List<String> userWebhookList = getConfig().getStringList("user_configs");
+        userWebhookNames = new ArrayList<>();
         for (String uuid : userWebhookList) {
             File userdata = new File(getDataFolder(), "userdata/" + uuid + ".yml");
             YamlConfiguration userConfig = YamlConfiguration.loadConfiguration(userdata);
@@ -153,7 +155,8 @@ public class Monitor extends JavaPlugin implements Listener {
             if (webhooksUserSection != null) {
                 Set<String> webhooksUserNames = webhooksUserSection.getKeys(false);
                 for (String name : webhooksUserNames) {
-                    webhooks.put(name + uuid, new UserWebhook(name, UUID.fromString(uuid)));
+                    webhooks.put(name + "_" + uuid, new UserWebhook(name, UUID.fromString(uuid)));
+                    userWebhookNames.add(name + "_" + uuid);
                 }
             }
         }
