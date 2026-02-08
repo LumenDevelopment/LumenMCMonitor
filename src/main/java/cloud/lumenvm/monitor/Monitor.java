@@ -648,7 +648,7 @@ public class Monitor extends JavaPlugin implements Listener {
                 List<String> userWebhooks = new ArrayList<>();
                 for (String name : webhooksNames) {
                     if (name.contains(((Player) sender).getUniqueId().toString())) {
-                        userWebhooks.add(name.replace("_" + ((Player) sender).getUniqueId().toString(), ""));
+                        userWebhooks.add(name.replace("_" + ((Player) sender).getUniqueId(), ""));
                     }
                 }
                 for (int i = 0; i < userWebhooks.size(); i++) {
@@ -837,10 +837,6 @@ public class Monitor extends JavaPlugin implements Listener {
             getLogger().warning("Unable to check for updates: " + e);
 
         }
-    }
-
-    public static boolean permissionUserWebhooks(Player player) {
-        return player.hasPermission("lumenmc.userwebhooks");
     }
 
     // Get locale
