@@ -31,7 +31,7 @@ public class UserWebhook extends Webhook{
         userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
     }
 
-    public static void addUserWebhook(UUID playerUUID, String name, String url) {
+    public static String addUserWebhook(String[] args, UUID playerUUID, String name, String url) {
         if (userdataDirectory == null) {
             userdataDirectory = new File(plugin.getDataFolder(), "userdata/");
         }
@@ -43,6 +43,12 @@ public class UserWebhook extends Webhook{
 
         InputStreamReader stream = new InputStreamReader(Objects.requireNonNull(plugin.getResource("webhookUserTemplate.yml")));
         YamlConfiguration template = YamlConfiguration.loadConfiguration(stream);
+
+        for (String key : userConfig.getKeys(false)) {
+            if (key.equalsIgnoreCase(args[1])) {
+                return "§cThat webhook already exists!";
+            }
+        }
 
         userConfig.set(name, template);
         userConfig.set(name + ".url", url);
@@ -60,11 +66,18 @@ public class UserWebhook extends Webhook{
         }
         plugin.saveConfig();
         plugin.pluginReload();
+        return "§aAdded webhook: §r" + args[1] + " §awith url: §r" + args[2];
     }
 
-    public static void removeUserWebhook(UUID playerUUID, String name) {
+    public static String removeUserWebhook(String[] args, UUID playerUUID, String name) {
         File userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
         YamlConfiguration webhookConfig = YamlConfiguration.loadConfiguration(userdata);
+
+        for (String key : webhookConfig.getKeys(false)) {
+            if (key.equalsIgnoreCase(args[1])) {
+                return "§cThat webhook doesn't exist!";
+            }
+        }
 
         webhookConfig.set(name, null);
 
@@ -82,6 +95,7 @@ public class UserWebhook extends Webhook{
         }
         plugin.saveConfig();
         plugin.pluginReload();
+        return "§aRemoved webhook: §r" + args[1];
     }
 
     public static void setPlugin(Monitor plugin) {
