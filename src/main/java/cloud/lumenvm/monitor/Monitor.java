@@ -691,7 +691,7 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("list");
             return list;
         }
-        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("user")) {
+        if (command.getName().equalsIgnoreCase("webhook") && args.length == 1) {
             list.add("add");
             list.add("remove");
             list.add("list");
@@ -700,17 +700,6 @@ public class Monitor extends JavaPlugin implements Listener {
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook") && args[1].equalsIgnoreCase("remove")) {
             webhooksNames.remove("default");
             return webhooksNames;
-        }
-        if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("user") && args[1].equalsIgnoreCase("remove")) {
-            if (sender instanceof Player) {
-                for (String name : webhooksNames) {
-                    if (name.contains(sender.getName())) {
-                        name = name.replace(sender.getName() + "_", "");
-                        list.add(name);
-                    }
-                }
-            }
-            return list;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("config")) {
             list = getConfig().getKeys(true).stream().toList();
@@ -848,6 +837,10 @@ public class Monitor extends JavaPlugin implements Listener {
             getLogger().warning("Unable to check for updates: " + e);
 
         }
+    }
+
+    public static boolean permissionUserWebhooks(Player player) {
+        return player.hasPermission("lumenmc.userwebhooks");
     }
 
     // Get locale
