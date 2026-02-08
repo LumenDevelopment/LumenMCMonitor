@@ -14,7 +14,7 @@ public class UserConfigLoader extends ConfigLoader{
     public UserConfigLoader(String section, UUID playerUUID) {
         super(null, true);
         this.playerUUID = playerUUID;
-        this.name = plugin.getServer().getOfflinePlayer(playerUUID).getName() + "_" + section;
+        this.name = section + "_" + playerUUID;
 
         File userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
 
