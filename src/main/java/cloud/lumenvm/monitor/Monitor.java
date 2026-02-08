@@ -46,7 +46,6 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Loaders
     LanguageLoader langLoader;
-    Embed embedLoader;
 
     public Map<String, Embed> embeds;
 
