@@ -277,7 +277,7 @@ public class Webhook {
                 return;
             }
 
-            if (confLoader.debug) {
+            if (plugin.debug) {
                 plugin.getLogger().info("Debug: Sending embed to Discord \n" + json);
             }
             HttpRequest request = HttpRequest.newBuilder()
@@ -287,7 +287,7 @@ public class Webhook {
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (confLoader.debug) {
+            if (plugin.debug) {
                 plugin.getLogger().info("Debug: Webhook embed sent: HTTP " + response.statusCode());
                 plugin.getLogger().info("Debug: Response body: " + response.body());
             }
