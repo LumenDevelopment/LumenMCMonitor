@@ -12,14 +12,14 @@ commands:
     description: Commands for LumenMC Monitor
     usage: /lumenmc test|lang|reload|webhook|config|send|user (For full usage visit plugin website)
     permission: lumenmc.admin
-  lumenmc user:
+  webhook:
     description: User webhooks
-    usage: /lumenmc user add|remove|config|list
-    permission: lumenmc.player
+    usage: /webhook add|remove|config|list
+    permission: lumenmc.userwebhooks
 permissions:
   lumenmc.admin:
     default: op
     children:
-      lumenmc.player: true
-  lumenmc.player:
+      lumenmc.userwebhooks: true
+  lumenmc.userwebhooks:
     default: not op

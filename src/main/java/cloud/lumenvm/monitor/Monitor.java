@@ -341,314 +341,325 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Commands
     @Override
-    public boolean onCommand(@NonNull CommandSender sender, Command command, @NonNull String label, String @NonNull [] args) {
-        if (!command.getName().equalsIgnoreCase("lumenmc")) return false;
-
-        if (args.length == 0) {
-            return false;
-        }
+    public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String @NonNull [] args) {
         List<String> webhooksNames = new ArrayList<>();
         for (Webhook webhook : webhooks.values()) {
             webhooksNames.add(webhook.confLoader.name);
         }
-
-
-        if (args[0].equalsIgnoreCase("test")) {
-            String content = "🔧 LumenMC test message in " + getDescription().getVersion() +
-                    " @ " + Instant.now();
-            for (Webhook webhook : webhooks.values()) {
-                webhook.queue.offer(content);
+        if (command.getName().equalsIgnoreCase("lumenmc")) {
+            if (args.length == 0) {
+                return false;
             }
-            sender.sendMessage("§aTesting message sent...");
-            return true;
-        }
 
-        if (args[0].equalsIgnoreCase("reload")) {
-            pluginReload();
-            sender.sendMessage("§aReloaded...");
-            return true;
-        }
 
-        if (args[0].equalsIgnoreCase("lang")) {
-            if (args.length == 1) {
-                sender.sendMessage("Use: /lumenmc lang create|remove|set|list");
+            if (args[0].equalsIgnoreCase("test")) {
+                String content = "🔧 LumenMC test message in " + getDescription().getVersion() +
+                        " @ " + Instant.now();
+                for (Webhook webhook : webhooks.values()) {
+                    webhook.queue.offer(content);
+                }
+                sender.sendMessage("§aTesting message sent...");
                 return true;
             }
 
-            if (args[1].equalsIgnoreCase("create")) {
-                if (args.length == 2) {
-                    sender.sendMessage("Use: /lumenmc lang create [language]");
-                    return true;
-                }
-
-                String langName = args[2];
-                if (langName == null || langName.isBlank()) {
-                    sender.sendMessage("Use: /lumenmc lang create [language]");
-                    return true;
-                }
-                if (args.length > 3) {
-                    sender.sendMessage("Don't enter spaces, please. Use: /lumenmc lang create [language]");
-                    return true;
-                }
-                if (langName.contains(".yml")) langName = langName.replace(".yml", "");
-                sender.sendMessage(langLoader.createLang(langName));
+            if (args[0].equalsIgnoreCase("reload")) {
+                pluginReload();
+                sender.sendMessage("§aReloaded...");
                 return true;
             }
 
-            if (args[1].equalsIgnoreCase("remove")) {
-                if (args.length == 2) {
-                    sender.sendMessage("Use: /lumenmc lang remove [language]");
+            if (args[0].equalsIgnoreCase("lang")) {
+                if (args.length == 1) {
+                    sender.sendMessage("Use: /lumenmc lang create|remove|set|list");
                     return true;
                 }
 
-                String langName = args[2];
-                if (langName == null || langName.isBlank()) {
-                    sender.sendMessage("Use: /lumenmc lang remove [language]");
-                    return true;
-                }
-                if (args.length > 3) {
-                    sender.sendMessage("§cDon't enter spaces, please. Use: /lumenmc lang remove [language]");
-                    return true;
-                }
-                if (langName.contains(".yml")) langName = langName.replace(".yml", "");
-                sender.sendMessage(langLoader.removeLang(langName));
-                return true;
-            }
-
-            if (args[1].equalsIgnoreCase("set")) {
-                if (args.length == 2) {
-                    sender.sendMessage("Use: /lumenmc lang set [language]");
-                    return true;
-                }
-
-                String langName = args[2];
-                if (langName == null || langName.isBlank()) {
-                    sender.sendMessage("Use: /lumenmc lang set [language]");
-                    return true;
-                }
-                if (args.length > 3) {
-                    sender.sendMessage("Don't enter spaces, please. Use: /lumenmc lang set [language]");
-                    return true;
-                }
-                if (langName.contains(".yml")) langName = langName.replace(".yml", "");
-                sender.sendMessage(langLoader.setLang(langName));
-                return true;
-            }
-
-            if (args[1].equalsIgnoreCase("list")) {
-                sender.sendMessage("These are available language files:");
-                ArrayList<String> list = langLoader.listLang();
-                for (String s : list) {
-                    sender.sendMessage(s);
-                }
-                return true;
-            }
-
-            if (args[1].equalsIgnoreCase("edit")) {
-                if (args.length == 2) {
-                    sender.sendMessage("Use: /lumenmc lang edit [key] [new string]");
-                    return true;
-                }
-
-                String key = args[2];
-                if (args.length == 3) {
-                    String message = langLoader.get(key);
-                    if (message == null) {
-                        sender.sendMessage("§cThat key doesn't exist");
+                if (args[1].equalsIgnoreCase("create")) {
+                    if (args.length == 2) {
+                        sender.sendMessage("Use: /lumenmc lang create [language]");
                         return true;
                     }
-                    sender.sendMessage("§aThe key is set to " + message);
-                    return true;
-                }
 
-                StringBuilder newObject = new StringBuilder(args[3]);
-                if (args.length > 3) {
-                    for (int i = 4; i < args.length ; i++) {
-                        newObject.append(" ").append(args[i]);
-                    }
-                }
-                try {
-                    sender.sendMessage(langLoader.editLang(key, newObject.toString()));
-                } catch (IOException e) {
-                    getLogger().severe("§cError when editing " + locale + ".yml");
-                }
-                return true;
-            }
-
-            sender.sendMessage("Use: /lumenmc lang create|remove|set|list|edit");
-            return true;
-        }
-
-        if (args[0].equalsIgnoreCase("webhook")) {
-            if (args.length == 1) {
-                sender.sendMessage("Use: /lumenmc webhook add|remove");
-                return true;
-            }
-            if (args[1].equalsIgnoreCase("add")) {
-                if (args.length == 2 || args.length == 3) {
-                    sender.sendMessage("Use: /lumenmc webhook add [webhookName] [webhookUrl]");
-                    return true;
-                }
-                if (webhookTest(args[3])) {
-                    Webhook.addWebhook(args[2], args[3]);
-                    saveConfig();
-                    reloadConfig();
-                    pluginReload();
-                    sender.sendMessage("§aAdded webhook: §r" + args[2] + " §awith url: §r" + args[3]);
-                } else {
-                    sender.sendMessage("§cInvalid webhook url: " + args[3]);
-                }
-                return true;
-            }
-            if (args[1].equalsIgnoreCase("remove")) {
-                if (args.length == 2) {
-                    sender.sendMessage("Use: /lumenmc webhook remove [webhookName]");
-                    return true;
-                }
-                if (args[2].equalsIgnoreCase("default")) {
-                    sender.sendMessage("§cYou can't remove default!");
-                    return true;
-                }
-                if (webhooksNames.contains(args[2])) {
-                    Webhook.removeWebhook(args[2]);
-                    saveConfig();
-                    reloadConfig();
-                    pluginReload();
-                    sender.sendMessage("§aRemoved webhook: §r" + args[2]);
-                } else {
-                    sender.sendMessage("§cInvalid name url: " + args[2]);
-                }
-                return true;
-            }
-            if (args[1].equalsIgnoreCase("list")) {
-                for (int i = 0; i < webhooksNames.size(); i++) {
-                    sender.sendMessage("[§a" + (i + 1) + "§r.] " + webhooksNames.get(i));
-                }
-                return true;
-            }
-        }
-
-        if (args[0].equalsIgnoreCase("config")) {
-            if (args.length == 1) {
-                sender.sendMessage("Use: /lumenmc config [configPath] [value]");
-                return true;
-            }
-            if (getConfig().getKeys(true).contains(args[1])) {
-                if (args.length == 2) {
-                    sender.sendMessage("§aThe value of §r" + args[1] + " §ais §r" + Objects.requireNonNull(getConfig().get(args[1])));
-                    return true;
-                }
-                if (args.length == 3) {
-                    if (args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false")) {
-                        boolean option = Boolean.parseBoolean(args[2]);
-                        getConfig().set(args[1], option);
-                        saveConfig();
-                        pluginReload();
-                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                    String langName = args[2];
+                    if (langName == null || langName.isBlank()) {
+                        sender.sendMessage("Use: /lumenmc lang create [language]");
                         return true;
+                    }
+                    if (args.length > 3) {
+                        sender.sendMessage("Don't enter spaces, please. Use: /lumenmc lang create [language]");
+                        return true;
+                    }
+                    if (langName.contains(".yml")) langName = langName.replace(".yml", "");
+                    sender.sendMessage(langLoader.createLang(langName));
+                    return true;
+                }
+
+                if (args[1].equalsIgnoreCase("remove")) {
+                    if (args.length == 2) {
+                        sender.sendMessage("Use: /lumenmc lang remove [language]");
+                        return true;
+                    }
+
+                    String langName = args[2];
+                    if (langName == null || langName.isBlank()) {
+                        sender.sendMessage("Use: /lumenmc lang remove [language]");
+                        return true;
+                    }
+                    if (args.length > 3) {
+                        sender.sendMessage("§cDon't enter spaces, please. Use: /lumenmc lang remove [language]");
+                        return true;
+                    }
+                    if (langName.contains(".yml")) langName = langName.replace(".yml", "");
+                    sender.sendMessage(langLoader.removeLang(langName));
+                    return true;
+                }
+
+                if (args[1].equalsIgnoreCase("set")) {
+                    if (args.length == 2) {
+                        sender.sendMessage("Use: /lumenmc lang set [language]");
+                        return true;
+                    }
+
+                    String langName = args[2];
+                    if (langName == null || langName.isBlank()) {
+                        sender.sendMessage("Use: /lumenmc lang set [language]");
+                        return true;
+                    }
+                    if (args.length > 3) {
+                        sender.sendMessage("Don't enter spaces, please. Use: /lumenmc lang set [language]");
+                        return true;
+                    }
+                    if (langName.contains(".yml")) langName = langName.replace(".yml", "");
+                    sender.sendMessage(langLoader.setLang(langName));
+                    return true;
+                }
+
+                if (args[1].equalsIgnoreCase("list")) {
+                    sender.sendMessage("These are available language files:");
+                    ArrayList<String> list = langLoader.listLang();
+                    for (String s : list) {
+                        sender.sendMessage(s);
+                    }
+                    return true;
+                }
+
+                if (args[1].equalsIgnoreCase("edit")) {
+                    if (args.length == 2) {
+                        sender.sendMessage("Use: /lumenmc lang edit [key] [new string]");
+                        return true;
+                    }
+
+                    String key = args[2];
+                    if (args.length == 3) {
+                        String message = langLoader.get(key);
+                        if (message == null) {
+                            sender.sendMessage("§cThat key doesn't exist");
+                            return true;
+                        }
+                        sender.sendMessage("§aThe key is set to " + message);
+                        return true;
+                    }
+
+                    StringBuilder newObject = new StringBuilder(args[3]);
+                    if (args.length > 3) {
+                        for (int i = 4; i < args.length ; i++) {
+                            newObject.append(" ").append(args[i]);
+                        }
                     }
                     try {
-                        int number = Integer.parseInt(args[2]);
-                        getConfig().set(args[1], number);
-                        saveConfig();
-                        pluginReload();
-                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
-                    } catch (Exception e) {
-                        getConfig().set(args[1], args[2]);
-                        saveConfig();
-                        pluginReload();
-                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                        sender.sendMessage(langLoader.editLang(key, newObject.toString()));
+                    } catch (IOException e) {
+                        getLogger().severe("§cError when editing " + locale + ".yml");
                     }
                     return true;
                 }
-                sender.sendMessage("Use: /lumenmc config [configPath] [value]");
-                return true;
-            }
-        }
 
-        if (args[0].equalsIgnoreCase("send")) {
-            if (args.length == 1) {
-                sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                sender.sendMessage("Use: /lumenmc lang create|remove|set|list|edit");
                 return true;
             }
 
-            if (webhooksNames.contains(args[1])) {
-                for (Webhook webhook : webhooks.values()) {
-                    for (String name : webhooksNames) {
-                        if (name.equalsIgnoreCase(args[1])) break;
-                        sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+            if (args[0].equalsIgnoreCase("webhook")) {
+                if (args.length == 1) {
+                    sender.sendMessage("Use: /lumenmc webhook add|remove");
+                    return true;
+                }
+                if (args[1].equalsIgnoreCase("add")) {
+                    if (args.length == 2 || args.length == 3) {
+                        sender.sendMessage("Use: /lumenmc webhook add [webhookName] [webhookUrl]");
                         return true;
                     }
+                    if (webhookTest(args[3])) {
+                        Webhook.addWebhook(args[2], args[3]);
+                        saveConfig();
+                        reloadConfig();
+                        pluginReload();
+                        sender.sendMessage("§aAdded webhook: §r" + args[2] + " §awith url: §r" + args[3]);
+                    } else {
+                        sender.sendMessage("§cInvalid webhook url: " + args[3]);
+                    }
+                    return true;
+                }
+                if (args[1].equalsIgnoreCase("remove")) {
                     if (args.length == 2) {
-                        sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                        sender.sendMessage("Use: /lumenmc webhook remove [webhookName]");
                         return true;
                     }
-                    StringBuilder joinText = new StringBuilder();
-                    joinText.append(prettyTime()).append(" ").append("Message: ");
-                    for (int i = 2; i <= (args.length - 1); i++) {
-                        joinText.append(args[(i)]).append(" ");
+                    if (args[2].equalsIgnoreCase("default")) {
+                        sender.sendMessage("§cYou can't remove default!");
+                        return true;
                     }
-                    webhook.enqueueIfAllowed(joinText.toString());
+                    for (String name : userWebhookNames) {
+                        if (name.equalsIgnoreCase(args[2])) {
+                            UserWebhook.removeUserWebhook(args, UUID.fromString(args[2].substring(args[2].length() - 36)), args[2].substring(0, args[2].length() - 37));
+                            sender.sendMessage("§aRemoved webhook: §r" + args[2]);
+                            return true;
+                        }
+                    }
+                    if (webhooksNames.contains(args[2])) {
+                        Webhook.removeWebhook(args[2]);
+                        saveConfig();
+                        reloadConfig();
+                        pluginReload();
+                        sender.sendMessage("§aRemoved webhook: §r" + args[2]);
+                    } else {
+                        sender.sendMessage("§cInvalid name url: " + args[2]);
+                    }
                     return true;
                 }
+                if (args[1].equalsIgnoreCase("list")) {
+                    for (int i = 0; i < webhooksNames.size(); i++) {
+                        sender.sendMessage("[§a" + (i + 1) + "§r.] " + webhooksNames.get(i));
+                    }
+                    return true;
+                }
+            }
+
+            if (args[0].equalsIgnoreCase("config")) {
+                if (args.length == 1) {
+                    sender.sendMessage("Use: /lumenmc config [configPath] [value]");
+                    return true;
+                }
+                if (getConfig().getKeys(true).contains(args[1])) {
+                    if (args.length == 2) {
+                        sender.sendMessage("§aThe value of §r" + args[1] + " §ais §r" + Objects.requireNonNull(getConfig().get(args[1])));
+                        return true;
+                    }
+                    if (args.length == 3) {
+                        if (args[1].contains("ignore_patterns")) {
+                            List<String> filter = getConfig().getStringList(args[1]);
+                            if (filter.contains(args[2])) {
+                                filter.remove(args[2]);
+                            } else {
+                                filter.add(args[2]);
+                            }
+                            getConfig().set(args[1], filter);
+                            saveConfig();
+                            pluginReload();
+                            sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                            return true;
+                        }
+                        if (args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false")) {
+                            boolean option = Boolean.parseBoolean(args[2]);
+                            getConfig().set(args[1], option);
+                            saveConfig();
+                            pluginReload();
+                            sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                            return true;
+                        }
+                        try {
+                            int number = Integer.parseInt(args[2]);
+                            getConfig().set(args[1], number);
+                            saveConfig();
+                            pluginReload();
+                            sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                        } catch (Exception e) {
+                            getConfig().set(args[1], args[2]);
+                            saveConfig();
+                            pluginReload();
+                            sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + getConfig().get(args[1]));
+                        }
+                        return true;
+                    }
+                    sender.sendMessage("Use: /lumenmc config [configPath] [value]");
+                    return true;
+                }
+            }
+
+            if (args[0].equalsIgnoreCase("send")) {
+                if (args.length == 1) {
+                    sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                    return true;
+                }
+
+                if (webhooksNames.contains(args[1])) {
+                    for (Webhook webhook : webhooks.values()) {
+                        for (String name : webhooksNames) {
+                            if (name.equalsIgnoreCase(args[1])) break;
+                            sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                            return true;
+                        }
+                        if (args.length == 2) {
+                            sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                            return true;
+                        }
+                        StringBuilder joinText = new StringBuilder();
+                        joinText.append(prettyTime()).append(" ").append("Message: ");
+                        for (int i = 2; i <= (args.length - 1); i++) {
+                            joinText.append(args[(i)]).append(" ");
+                        }
+                        webhook.enqueueIfAllowed(joinText.toString());
+                        return true;
+                    }
+                    sender.sendMessage("Use: /lumenmc send [webhook] [content]");
+                    return true;
+                }
+
                 sender.sendMessage("Use: /lumenmc send [webhook] [content]");
                 return true;
             }
-
-            sender.sendMessage("Use: /lumenmc send [webhook] [content]");
-            return true;
         }
-
-        if (args[0].equalsIgnoreCase("user")) {
-            if (args.length == 1) {
-                sender.sendMessage("Use: /lumenmc user add|remove|config|list");
+        if (command.getName().equalsIgnoreCase("webhook") && sender instanceof Player) {
+            if (args.length == 0) {
+                sender.sendMessage("Use: /webhook add|remove|config|list");
                 return true;
             }
 
-            if (args[1].equalsIgnoreCase("add")) {
-                if (args.length == 2) {
-                    sender.sendMessage("Use: /lumenmc user add [webhookUrl]");
+            if (args[0].equalsIgnoreCase("add")) {
+                if (args.length == 1) {
+                    sender.sendMessage("Use: /webhook add [webhookName] [webhookUrl]");
                     return true;
                 }
-                if (!webhookTest(args[3])) {
+                if (!webhookTest(args[2])) {
                     sender.sendMessage("Webhook url is invalid!");
                     return true;
                 }
-                if (sender instanceof Player) {
-                    UserWebhook.addUserWebhook(((Player) sender).getUniqueId(), args[2], args[3]);
-                } else {
-                    sender.sendMessage("Only players can execute this command!");
-                }
+                sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
                 return true;
             }
-            if (args[1].equalsIgnoreCase("remove")) {
-                if (args.length == 2) {
-                    sender.sendMessage("Use: /lumenmc user remove [webhookName]");
+            if (args[0].equalsIgnoreCase("remove")) {
+                if (args.length == 1) {
+                    sender.sendMessage("Use: /webhook remove [webhookName]");
                     return true;
                 }
-                if (sender instanceof Player) {
-                    UserWebhook.removeUserWebhook(((Player) sender).getUniqueId(), args[2]);
-                }
+                sender.sendMessage(UserWebhook.removeUserWebhook(args, ((Player) sender).getUniqueId(), args[1]));
                 return true;
             }
-            if (args[1].equalsIgnoreCase("list")) {
+            if (args[0].equalsIgnoreCase("list")) {
                 List<String> userWebhooks = new ArrayList<>();
-                if (sender instanceof Player) {
-                    for (String name : webhooksNames) {
-                        if (name.contains(sender.getName())) {
-                            name = name.replace(sender.getName() + "_", "");
-                            userWebhooks.add(name);
-                        }
+                for (String name : webhooksNames) {
+                    if (name.contains(((Player) sender).getUniqueId().toString())) {
+                        userWebhooks.add(name.replace("_" + ((Player) sender).getUniqueId().toString(), ""));
                     }
-                    for (int i = 0; i < userWebhooks.size(); i++) {
-                        sender.sendMessage("[§a" + (i + 1) + "§r.] " + userWebhooks.get(i));
-                    }
-                    return true;
                 }
+                for (int i = 0; i < userWebhooks.size(); i++) {
+                    sender.sendMessage("[§a" + (i + 1) + "§r.] " + userWebhooks.get(i));
+                }
+                return true;
             }
-
-            sender.sendMessage("Use: /lumenmc user add|remove|config|list");
+            sender.sendMessage("Use: /webhook add|remove|config|list");
             return true;
+        } else {
+            sender.sendMessage("§cOnly players can use this command");
         }
         return false;
     }
@@ -668,7 +679,6 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("webhook");
             list.add("config");
             list.add("send");
-            list.add("user");
             list.sort(null);
             return list;
         }
