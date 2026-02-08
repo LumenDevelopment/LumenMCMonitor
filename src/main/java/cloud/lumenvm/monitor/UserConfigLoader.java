@@ -20,11 +20,11 @@ public class UserConfigLoader extends ConfigLoader{
 
         this.config = YamlConfiguration.loadConfiguration(userdata);
 
-        this.url = config.getString(section + ".url");
-        this.sendServerLoad = config.getBoolean(section + ".send_server_start_stop");
-        this.embedsStartStopEnabled = config.getBoolean(section + ".embeds_start_stop_enabled");
+        this.url = config.getString(section + ".url", "https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX");
+        this.sendServerLoad = config.getBoolean(section + ".send_server_start_stop", true);
+        this.embedsStartStopEnabled = config.getBoolean(section + ".embeds_start_stop_enabled", true);
         this.ignorePatterns = config.getStringList(section + ".ignore_patterns");
-        this.removeMentions = config.getBoolean(section + ".remove_mentions");
+        this.removeMentions = config.getBoolean(section + ".remove_mentions", true);
 
         this.failedToLoadConfig = false;
     }
