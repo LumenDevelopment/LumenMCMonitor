@@ -40,7 +40,7 @@ public class Embed {
         if (!file.exists()) {
             try {
                 InputStream stream;
-                if (fileName.equals("quit") || fileName.equals("join") || fileName.equals("start") || fileName.equals("stop") || fileName.equals("death") || fileName.equals("watchdog")) {
+                if (fileName.contains("quit") || fileName.contains("join") || fileName.contains("start") || fileName.contains("stop") || fileName.contains("death") || fileName.contains("watchdog")) {
                     stream = plugin.getResource(fileName);
                 } else {
                     stream = plugin.getResource("embeds/template.json");
