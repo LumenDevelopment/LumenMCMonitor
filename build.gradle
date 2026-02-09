@@ -13,7 +13,7 @@ dateVersion = "dev" + versionFormat.format(now)
 println "Artifact version is set to $version"
 
 group = 'cloud.lumenvm.monitor'
-version = 'b1.2'
+version = 'b1.3'
 
 repositories {
     mavenCentral()
@@ -44,7 +44,7 @@ publishing {
 
             groupId = 'cloud.lumenvm'
             artifactId = 'lumenmc-monitor'
-            version = dateVersion
+            version = version
         }
     }
 
