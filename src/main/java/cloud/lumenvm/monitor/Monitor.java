@@ -41,6 +41,7 @@ import java.util.logging.Level;
 //    ▌ ▌▌▛▛▌█▌▛▌▛▖▞▌▌   ▛▖▞▌▛▌▛▌▌▜▘▛▌▛▘
 //    ▙▖▙▌▌▌▌▙▖▌▌▌▝ ▌▙▖  ▌▝ ▌▙▌▌▌▌▐▖▙▌▌
 //
+// TODO Organize code and add comments
 
 public class Monitor extends JavaPlugin implements Listener {
 
@@ -458,8 +459,8 @@ public class Monitor extends JavaPlugin implements Listener {
                         sender.sendMessage("§aThe key is set to " + message);
                         return true;
                     }
-
                     StringBuilder newObject = new StringBuilder(args[3]);
+                    // FIXME Fix this stupid warning
                     if (args.length > 3) {
                         for (int i = 4; i < args.length ; i++) {
                             newObject.append(" ").append(args[i]);
