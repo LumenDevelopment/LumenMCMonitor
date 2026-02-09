@@ -31,6 +31,7 @@ It even notifies you when the server stops ticking!
 7. Multi webhook support
 8. PlaceholderAPI support
 9. Addon support
+10. User webhooks
 
 ## Commands
 - /lumenmc reload - reloads config
@@ -45,6 +46,10 @@ It even notifies you when the server stops ticking!
     - add - adds webhook
     - remove - removes webhook
 - /lumenmc config - edits config
+- /webhook - command for creating user webhooks
+    - add - adds user webhook
+    - remove - removes user webhook
+    - list - lists user's webhooks
 
 ## License
 We're using [GNU GENERAL PUBLIC LICENSE v3](LICENSE)
@@ -53,6 +58,10 @@ We're using [GNU GENERAL PUBLIC LICENSE v3](LICENSE)
 Pull requests are welcome.
 ANY feedback appreciated.
 If you find issues you can open new issue here or open a ticket at our discord.
+
+## Creating addons
+This plugin supports addons. You can view a template repo [here](https://github.com/LumenDevelopment/LumenMCMonitor-AddonTemplate).
+[Click to view more](ADDONS.md)
 
 ## Links
 - <a href="https://www.lumenvm.cloud/" target="_blank">Lumen Website</a>

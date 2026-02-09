@@ -1,10 +1,11 @@
-package cloud.lumenvm;
+package cloud.lumenvm.monitor;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.jspecify.annotations.Nullable;
 
 import java.io.*;
 import java.net.URI;
@@ -65,9 +66,18 @@ public class Webhook {
         }
     };
 
-    Webhook(String name) {
+    public final boolean userWebhook;
+
+    Webhook(String name, boolean userWebhook, @Nullable UUID uuid) {
+
+        this.userWebhook = userWebhook;
+
         // Set config loader by name
-        this.confLoader = new ConfigLoader(name);
+        if (userWebhook) {
+            this.confLoader = new UserConfigLoader(name, uuid);
+        } else {
+            this.confLoader = new ConfigLoader(name, false);
+        }
 
         // Check if failed to load config
         if (confLoader.failedToLoadConfig) {
@@ -109,7 +119,7 @@ public class Webhook {
         if (plugin.debug) plugin.getLogger().info("Debug: Handlers connected in onEnable(); queueing logs");
 
         // Watchdog
-        if (confLoader.watchdogEnabled) {
+        if (confLoader.watchdogEnabled && !userWebhook) {
             // Heartbeat
             watchdogHeartbeatTaskId = Bukkit.getScheduler().runTaskTimer(plugin, () -> confLoader.lastTickNanos = System.nanoTime(), 0L, 1L).getTaskId();
 
@@ -267,7 +277,7 @@ public class Webhook {
                 return;
             }
 
-            if (confLoader.debug) {
+            if (plugin.debug) {
                 plugin.getLogger().info("Debug: Sending embed to Discord \n" + json);
             }
             HttpRequest request = HttpRequest.newBuilder()
@@ -277,7 +287,7 @@ public class Webhook {
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (confLoader.debug) {
+            if (plugin.debug) {
                 plugin.getLogger().info("Debug: Webhook embed sent: HTTP " + response.statusCode());
                 plugin.getLogger().info("Debug: Response body: " + response.body());
             }
@@ -291,7 +301,7 @@ public class Webhook {
         if (!drainLock.compareAndSet(false, true)) {
             return;
         }
-        for (Webhook webhook : plugin.webhooks) {
+        for (Webhook webhook : plugin.webhooks.values()) {
             try {
                 List<String> batch = new ArrayList<>(webhook.confLoader.maxBatchSize);
                 while (batch.size() < webhook.confLoader.maxBatchSize) {

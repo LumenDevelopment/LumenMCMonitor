@@ -21,6 +21,8 @@ avatar_url: "https://cdn.lumenvm.cloud/lumenmc_monitor.png"
 # Set server name
 server_name: "Server"
 
+user_configs: []
+
 webhooks:
   default:
     # URL of discord webhook (Do not change if you're using LumenMC in Pterodactyl)
@@ -84,7 +86,8 @@ webhooks:
     ##############################
 
     # Filters
-    ignore_patterns: [ ]
+    ignore_patterns:
+      - # a bad word
 
     # Maximum amount of messages in one batch
     max_batch_size: 50

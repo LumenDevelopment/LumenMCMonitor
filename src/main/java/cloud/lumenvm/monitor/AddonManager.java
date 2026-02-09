@@ -1,4 +1,4 @@
-package cloud.lumenvm;
+package cloud.lumenvm.monitor;
 
 import cloud.lumenvm.api.MonitorAPI;
 import cloud.lumenvm.api.MonitorAddon;
@@ -15,7 +15,7 @@ public class AddonManager {
     private final Monitor plugin;
 
     public AddonManager(Monitor plugin) {
-        this.api = new MonitorAPI(plugin, plugin.embeds, plugin.embedLoader);
+        this.api = new MonitorAPI(plugin, plugin.embeds);
         this.plugin = plugin;
 
         File addonsDir = new File(plugin.getDataFolder(), "addons");
