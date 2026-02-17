@@ -13,7 +13,7 @@ public interface MonitorAddon {
      * You also <strong>must register a Bukkit event</strong> for the addon to work.
      * @param api the {@link MonitorAPI}
      */
-    void onLoad(MonitorAPI api);
+    void onLoad(MonitorAPI api, Context context);
 
     /**
      * This will trigger when the addon unloads.
