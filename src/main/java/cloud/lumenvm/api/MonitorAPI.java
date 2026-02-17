@@ -2,7 +2,7 @@ package cloud.lumenvm.api;
 
 import cloud.lumenvm.monitor.Embed;
 import cloud.lumenvm.monitor.Monitor;
-import org.bukkit.plugin.java.JavaPlugin;
+import cloud.lumenvm.monitor.Webhook;
 
 import java.util.Map;
 
@@ -27,19 +27,19 @@ public class MonitorAPI {
     /**Send messages
      * @param content {@link java.lang.String} content
      */
-    public void fireContent(String content) {
-        plugin.fireContent(content);
+    public void fireContent(String content, Webhook webhook) {
+        plugin.fireContent(content, webhook);
     }
 
     /**Send embeds. To load them use {@link #getEmbeds() getEmbeds().get("my_embed")} (a JSON embed has to be in the embeds folder).
      * @param embedJson the embed JSON
      */
-    public void fireEmbed(String embedJson) {
-        plugin.fireEmbed(embedJson);
+    public void fireEmbed(String embedJson, Webhook webhook) {
+        plugin.fireEmbed(embedJson, webhook);
     }
 
     /**@return the LumenMC Monitor plugin*/
-    public JavaPlugin getPlugin() {
+    public Monitor getPlugin() {
         return plugin;
     }
 

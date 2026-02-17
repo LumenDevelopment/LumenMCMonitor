@@ -71,8 +71,12 @@ public class Monitor extends JavaPlugin implements Listener {
     // Debug
     public boolean debug;
 
+    public static Monitor plugin;
+
     @Override
     public void onLoad() {
+        plugin = this;
+
         // Set http client
         httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
         Webhook.httpClient = httpClient;
@@ -838,16 +842,12 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     // Help methods
-    public void fireContent(String content) {
-        for (Webhook webhook : webhooks.values()) {
-            webhook.enqueueIfAllowed(content);
-        }
+    public void fireContent(String content, Webhook webhook) {
+        webhook.enqueueIfAllowed(content);
     }
 
-    public void fireEmbed(String embedJson) {
-        for (Webhook webhook : webhooks.values()) {
-            webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedJson));
-        }
+    public void fireEmbed(String embedJson, Webhook webhook) {
+        webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedJson));
     }
 
     private String prettyMode(GameMode mode) {
