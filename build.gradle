@@ -10,8 +10,6 @@ def now = new Date()
 def versionFormat = new SimpleDateFormat("yyyy-MM-dd-HHmmss")
 dateVersion = "dev" + versionFormat.format(now)
 
-println "Artifact version is set to $version"
-
 group = 'cloud.lumenvm.monitor'
 version = 'b1.3'
 
@@ -38,13 +36,14 @@ dependencies {
 }
 
 publishing {
+    println "Artifact version is set to $dateVersion"
     publications {
         gpr(MavenPublication) {
             from components.java
 
             groupId = 'cloud.lumenvm'
             artifactId = 'lumenmc-monitor'
-            version = version
+            version = dateVersion
         }
     }
 
@@ -74,7 +73,7 @@ tasks.named("build") {
 
 tasks.javadoc{
     include("cloud/lumenvm/api/**")
-    include("cloud/lumenvm/TemplateAddon.java")
+    include("cloud/lumenvm/template/**")
     exclude("**/internal/**")
 }
 
