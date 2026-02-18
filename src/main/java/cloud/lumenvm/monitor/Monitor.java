@@ -843,7 +843,7 @@ public class Monitor extends JavaPlugin implements Listener {
 
     // Help methods
     public void fireContent(String content, Webhook webhook) {
-        webhook.enqueueIfAllowed(content);
+        Webhook.sendContent(content, URI.create(webhook.confLoader.url));
     }
 
     public void fireEmbed(String embedJson, Webhook webhook) {
