@@ -182,7 +182,9 @@ public class Monitor extends JavaPlugin implements Listener {
         embeds.put("death", new Embed("death"));
         embeds.put("watchdog", new Embed("watchdog"));
 
-        manager = new AddonManager(this);
+        if (!reloading) {
+            manager = new AddonManager(this);
+        }
 
         // Register events
         if (!reloading) {
