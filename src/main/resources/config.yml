@@ -24,6 +24,7 @@ embed_image_url: "https://cdn.lumenvm.cloud/lumenmc-banner.png"
 # Set server name
 server_name: "Server"
 
+# UUIDs of players who set up their webhooks will showup here
 user_configs: []
 
 webhooks:
