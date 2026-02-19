@@ -47,4 +47,8 @@ public class MonitorAPI {
     public Map<String, Embed> getEmbeds() {
         return embeds;
     }
+
+    public void registerCommand(AddonCommand addonCommand) {
+        plugin.commandRegistry.register(addonCommand);
+    }
 }
