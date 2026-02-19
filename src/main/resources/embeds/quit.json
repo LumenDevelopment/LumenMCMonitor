@@ -3,7 +3,7 @@
   "avatar_url":"%lumenmc_avatar%",
   "embeds":[
     {
-      "image":{"url":"https://cdn.lumenvm.cloud/lumenmc-banner.png"},
+      "image":{"url":"%lumenmc_image%"},
       "title":"💁Someone left the game!",
       "description":"Say goodbye to %player_name%",
       "color":16776960,
