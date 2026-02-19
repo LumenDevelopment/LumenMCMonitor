@@ -23,8 +23,8 @@ public class Context {
         return jar.getInputStream(entry);
     }
 
-    public void saveResource(String path) throws IOException {
-        File out = new File(dataFolder, path);
+    public void saveResource(String path, String destination) throws IOException {
+        File out = new File(dataFolder, destination);
 
         out.getParentFile().mkdirs();
 
