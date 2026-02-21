@@ -6,7 +6,7 @@ import cloud.lumenvm.monitor.Webhook;
 
 import java.util.Map;
 
-/**This class is used to communicate between the addon and the main plugin.*/
+/**Used to communicate between the addon and the main plugin.*/
 public class MonitorAPI {
 
     /**Monitor plugin.*/
@@ -26,6 +26,7 @@ public class MonitorAPI {
 
     /**Send messages
      * @param content {@link java.lang.String} content
+     * @param webhook {@link Webhook} that the content will be sent to
      */
     public void fireContent(String content, Webhook webhook) {
         plugin.fireContent(content, webhook);
@@ -33,6 +34,7 @@ public class MonitorAPI {
 
     /**Send embeds. To load them use {@link #getEmbeds() getEmbeds().get("my_embed")} (a JSON embed has to be in the embeds folder).
      * @param embedJson the embed JSON
+     * @param webhook {@link Webhook} that the embed will be sent to
      */
     public void fireEmbed(String embedJson, Webhook webhook) {
         plugin.fireEmbed(embedJson, webhook);
@@ -48,6 +50,10 @@ public class MonitorAPI {
         return embeds;
     }
 
+    /**
+     * Register commands
+     * @param addonCommand command you created
+     * */
     public void registerCommand(AddonCommand addonCommand) {
         plugin.commandRegistry.register(addonCommand);
     }

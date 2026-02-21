@@ -1,6 +1,6 @@
 package cloud.lumenvm.monitor;
 
-import cloud.lumenvm.api.Context;
+import cloud.lumenvm.api.AddonContext;
 import cloud.lumenvm.api.MonitorAPI;
 import cloud.lumenvm.api.MonitorAddon;
 
@@ -39,7 +39,7 @@ public class AddonManager {
 
             for (MonitorAddon addon : serviceLoader) {
                 File addonFolder = new File(plugin.getDataFolder(), file.getName().replace(".jar", ""));
-                Context context = new Context(addonFolder, file);
+                AddonContext context = new AddonContext(addonFolder, file);
                 addon.onLoad(api, context);
                 loadedAddons.add(addon);
                 plugin.getServer().getConsoleSender().sendMessage("§aLoaded addon: §r" + addon.getName());
