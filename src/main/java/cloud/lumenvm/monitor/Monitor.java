@@ -1,8 +1,6 @@
 package cloud.lumenvm.monitor;
 
 import cloud.lumenvm.api.AddonCommand;
-import cloud.lumenvm.api.CommandRegistry;
-import cloud.lumenvm.api.CommandType;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -187,9 +185,8 @@ public class Monitor extends JavaPlugin implements Listener {
         embeds.put("death", new Embed("death"));
         embeds.put("watchdog", new Embed("watchdog"));
 
-        commandRegistry = new CommandRegistry();
-
         if (!reloading) {
+            commandRegistry = new CommandRegistry();
             manager = new AddonManager(this);
         }
 
@@ -647,14 +644,14 @@ public class Monitor extends JavaPlugin implements Listener {
                     return true;
                 }
 
-                AddonCommand addonCommand = commandRegistry.get(args[1]);
+                AddonCommand addonCommand = commandRegistry.getFromMonitor(args[1]);
 
                 if (addonCommand == null) {
-                    sender.sendMessage("Use: /lumenmc addon [addon]");
+                    sender.sendMessage("Use: /lumenmc addon [addon] (Addon doesn't exist))");
                     return true;
                 }
 
-                if (addonCommand.type() != CommandType.MONITOR) {
+                if (!commandRegistry.monitorCommands.containsValue(addonCommand)) {
                     sender.sendMessage("Use: /lumenmc addon [addon]");
                     return true;
                 }
@@ -778,14 +775,9 @@ public class Monitor extends JavaPlugin implements Listener {
                     return true;
                 }
 
-                AddonCommand addonCommand = commandRegistry.get(args[1]);
+                AddonCommand addonCommand = commandRegistry.getFromWebhook(args[1]);
 
                 if (addonCommand == null) {
-                    sender.sendMessage("Use: /webhook addon [addon]");
-                    return true;
-                }
-
-                if (addonCommand.type() != CommandType.WEBHOOK) {
                     sender.sendMessage("Use: /webhook addon [addon]");
                     return true;
                 }
@@ -842,23 +834,17 @@ public class Monitor extends JavaPlugin implements Listener {
             if (args.length == 2) {
                 return commandRegistry.getAllWebhook().stream().map(AddonCommand::name).toList();
             }
-            AddonCommand addonCommand = commandRegistry.get(args[1]);
+            AddonCommand addonCommand = commandRegistry.getFromWebhook(args[1]);
             if (addonCommand == null) return list;
-            if (addonCommand.type() != CommandType.WEBHOOK) {
-                return list;
-            }
-            return addonCommand.tabComplete(sender, Arrays.copyOfRange(args, 1, args.length));
+            return addonCommand.tabComplete(sender, Arrays.copyOfRange(args, 2, args.length));
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length >= 2 && args[0].equalsIgnoreCase("addon")) {
             if (args.length == 2) {
                 return commandRegistry.getAllMonitor().stream().map(AddonCommand::name).toList();
             }
-            AddonCommand addonCommand = commandRegistry.get(args[1]);
+            AddonCommand addonCommand = commandRegistry.getFromMonitor(args[1]);
             if (addonCommand == null) return list;
-            if (addonCommand.type() != CommandType.MONITOR) {
-                return list;
-            }
-            return addonCommand.tabComplete(sender, Arrays.copyOfRange(args, 1, args.length));
+            return addonCommand.tabComplete(sender, Arrays.copyOfRange(args, 2, args.length));
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook") && args[1].equalsIgnoreCase("remove")) {
             webhooksNames.remove("default");
