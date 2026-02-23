@@ -721,7 +721,11 @@ public class Monitor extends JavaPlugin implements Listener {
                     sender.sendMessage("Use: /webhook remove [webhookName]");
                     return true;
                 }
-                sender.sendMessage(UserWebhook.removeUserWebhook(args, ((Player) sender).getUniqueId(), args[1]));
+                if (webhooksNames.contains(args[1] + "_" + ((Player) sender).getUniqueId())) {
+                    sender.sendMessage(UserWebhook.removeUserWebhook(args, ((Player) sender).getUniqueId(), args[1]));
+                } else {
+                    sender.sendMessage("§cThat webhook doesn't exist!");
+                }
                 return true;
             }
             if (args[0].equalsIgnoreCase("list")) {
