@@ -11,6 +11,8 @@ import java.util.*;
 
 public class AddonManager {
 
+    // TODO Comments
+
     private final MonitorAPI api;
     private final List<MonitorAddon> loadedAddons = new ArrayList<>();
     private final Monitor plugin;

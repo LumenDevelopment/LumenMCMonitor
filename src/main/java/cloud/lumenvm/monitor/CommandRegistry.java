@@ -9,6 +9,8 @@ import java.util.Map;
 
 public class CommandRegistry {
 
+    // TODO Comments
+
     public final Map<String, AddonCommand> commands = new HashMap<>();
     public final Map<String, AddonCommand> webhookCommands = new HashMap<>();
     public final Map<String, AddonCommand> monitorCommands = new HashMap<>();
