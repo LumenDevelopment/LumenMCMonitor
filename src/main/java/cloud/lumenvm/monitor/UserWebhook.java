@@ -16,12 +16,12 @@ public class UserWebhook extends Webhook{
 
     UUID playerUUID;
 
-    public static Map<UUID, Integer> userWebhookCount;
+    public static Map<UUID, Integer> userWebhookCount = new HashMap<>();
 
     UserWebhook(String name, UUID playerUUID) {
         super(name, true, playerUUID);
 
-        userWebhookCount = new HashMap<>();
+
         userWebhookCount.putIfAbsent(playerUUID, 0);
         userWebhookCount.put(playerUUID, userWebhookCount.get(playerUUID) + 1);
 
