@@ -671,11 +671,39 @@ public class Monitor extends JavaPlugin implements Listener {
                     sender.sendMessage("Use: /webhook add [webhookName] [webhookUrl]");
                     return true;
                 }
+                int maxUserWebhooks = 5;
+                ConfigurationSection section = getConfig().getConfigurationSection("max_user_webhooks");
+                assert section != null;
+                Set<String> keys = section.getKeys(false);
+                if (perms != null) {
+                    for (String key : keys) {
+                        if (key.equalsIgnoreCase(perms.getPrimaryGroup((Player) sender))) {
+                            maxUserWebhooks = section.getInt(key);
+                            break;
+                        }
+                        maxUserWebhooks = section.getInt("default");
+                    }
+                } else {
+                    maxUserWebhooks = section.getInt("default");
+                }
                 if (!webhookTest(args[2])) {
                     sender.sendMessage("Webhook url is invalid!");
                     return true;
                 }
-                sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
+                int userWebhookCount;
+                if (UserWebhook.userWebhookCount.get(((Player) sender).getUniqueId()) == null) {
+                    userWebhookCount = 0;
+                } else {
+                    userWebhookCount = UserWebhook.userWebhookCount.get(((Player) sender).getUniqueId());
+                }
+                if (userWebhookCount <= maxUserWebhooks) {
+                    sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
+                } else if (maxUserWebhooks == -1) {
+                    sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
+                } else {
+                    sender.sendMessage("§cMaximum amount of webhooks reached");
+                }
+
                 return true;
             }
             if (args[0].equalsIgnoreCase("remove")) {
