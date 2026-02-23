@@ -850,6 +850,16 @@ public class Monitor extends JavaPlugin implements Listener {
             webhooksNames.remove("default");
             return webhooksNames;
         }
+        if (command.getName().equalsIgnoreCase("webhook") && args.length == 2 && args[0].equalsIgnoreCase("remove")) {
+            if (sender instanceof Player) {
+                for (String webhook : webhooksNames) {
+                    if (webhook.contains(((Player) sender).getUniqueId().toString())) {
+                        list.add(webhook.replace("_" + ((Player) sender).getUniqueId(), ""));
+                    }
+                }
+            }
+            return list;
+        }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("config")) {
             list = getConfig().getKeys(true).stream().toList();
             return list;
