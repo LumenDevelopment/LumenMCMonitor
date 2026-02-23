@@ -11,7 +11,7 @@ def versionFormat = new SimpleDateFormat("yyyy-MM-dd-HHmmss")
 dateVersion = "dev" + versionFormat.format(now)
 
 group = 'cloud.lumenvm.monitor'
-version = 'b1.3'
+version = 'b1.4'
 
 repositories {
     mavenCentral()
@@ -45,7 +45,7 @@ publishing {
 
             groupId = 'cloud.lumenvm'
             artifactId = 'lumenmc-monitor'
-            version = dateVersion
+            version = version
         }
     }
 
@@ -53,7 +53,7 @@ publishing {
     repositories {
         maven {
             name = "nexus"
-            url = uri("https://maven.lumenvm.cloud/repository/dev/")
+            url = uri("https://maven.lumenvm.cloud/repository/release/")
 
             credentials {
                 username = project.findProperty("nexus.user")
@@ -74,7 +74,7 @@ tasks.named("build") {
 }
 
 tasks.javadoc{
-    javadoc.title = 'LumenMCMonitor ' + dateVersion + ' API'
+    javadoc.title = 'LumenMCMonitor ' + version + ' API'
     include("cloud/lumenvm/api/**")
     exclude("**/internal/**")
 }
