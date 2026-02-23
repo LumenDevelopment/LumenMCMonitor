@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import me.clip.placeholderapi.events.ExpansionsLoadedEvent;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.command.Command;
@@ -21,6 +22,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.event.server.ServerLoadEvent;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.jspecify.annotations.NonNull;
@@ -75,6 +77,8 @@ public class Monitor extends JavaPlugin implements Listener {
     public boolean debug;
 
     public static Monitor plugin;
+
+    private static Permission perms = null;
 
     @Override
     public void onLoad() {
@@ -188,6 +192,12 @@ public class Monitor extends JavaPlugin implements Listener {
         if (!reloading) {
             commandRegistry = new CommandRegistry();
             manager = new AddonManager(this);
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("Vault")) {
+            RegisteredServiceProvider<Permission> rsp = getServer().getServicesManager().getRegistration(Permission.class);
+            assert rsp != null;
+            perms = rsp.getProvider();
         }
 
         // Register events
