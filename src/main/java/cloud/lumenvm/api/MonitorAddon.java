@@ -1,7 +1,7 @@
 package cloud.lumenvm.api;
 
 /**
- * This interface is used to create addons for LumenMC Monitor.
+ * Used to create addons for LumenMC Monitor.
  */
 public interface MonitorAddon {
 
@@ -9,14 +9,15 @@ public interface MonitorAddon {
     String getName();
 
     /**
-     * This will trigger when the addon loads. You can set api, plugin here.
+     * Triggers when the addon loads. You can set api, plugin here.
      * You also <strong>must register a Bukkit event</strong> for the addon to work.
      * @param api the {@link MonitorAPI}
+     * @param context the {@link AddonContext}
      */
-    void onLoad(MonitorAPI api);
+    void onLoad(MonitorAPI api, AddonContext context);
 
     /**
-     * This will trigger when the addon unloads.
+     * Triggers when the addon unloads.
      */
     void onUnload();
 

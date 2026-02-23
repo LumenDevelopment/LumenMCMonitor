@@ -5,7 +5,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.util.UUID;
 
-public class UserConfigLoader extends ConfigLoader{
+public class UserConfigLoader extends ConfigLoader {
+
+    // TODO Comments
 
     private static Monitor plugin;
     YamlConfiguration config;

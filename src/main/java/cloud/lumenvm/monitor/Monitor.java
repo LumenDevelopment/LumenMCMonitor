@@ -1,11 +1,13 @@
 package cloud.lumenvm.monitor;
 
+import cloud.lumenvm.api.AddonCommand;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import me.clip.placeholderapi.events.ExpansionsLoadedEvent;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.command.Command;
@@ -20,6 +22,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.event.server.ServerLoadEvent;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.jspecify.annotations.NonNull;
@@ -48,6 +51,8 @@ public class Monitor extends JavaPlugin implements Listener {
     // Loaders
     LanguageLoader langLoader;
 
+    public CommandRegistry commandRegistry;
+
     public Map<String, Embed> embeds;
 
     // Addon manager
@@ -71,8 +76,14 @@ public class Monitor extends JavaPlugin implements Listener {
     // Debug
     public boolean debug;
 
+    public static Monitor plugin;
+
+    private static Permission perms = null;
+
     @Override
     public void onLoad() {
+        plugin = this;
+
         // Set http client
         httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
         Webhook.httpClient = httpClient;
@@ -178,7 +189,16 @@ public class Monitor extends JavaPlugin implements Listener {
         embeds.put("death", new Embed("death"));
         embeds.put("watchdog", new Embed("watchdog"));
 
-        manager = new AddonManager(this);
+        if (!reloading) {
+            commandRegistry = new CommandRegistry();
+            manager = new AddonManager(this);
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("Vault")) {
+            RegisteredServiceProvider<Permission> rsp = getServer().getServicesManager().getRegistration(Permission.class);
+            assert rsp != null;
+            perms = rsp.getProvider();
+        }
 
         // Register events
         if (!reloading) {
@@ -627,6 +647,28 @@ public class Monitor extends JavaPlugin implements Listener {
                 sender.sendMessage("Use: /lumenmc send [webhook] [content]");
                 return true;
             }
+
+            if (args[0].equalsIgnoreCase("addon")) {
+                if (args.length == 1) {
+                    sender.sendMessage("Use: /lumenmc addon [addon]");
+                    return true;
+                }
+
+                AddonCommand addonCommand = commandRegistry.getFromMonitor(args[1]);
+
+                if (addonCommand == null) {
+                    sender.sendMessage("Use: /lumenmc addon [addon] (Addon doesn't exist))");
+                    return true;
+                }
+
+                if (!commandRegistry.monitorCommands.containsValue(addonCommand)) {
+                    sender.sendMessage("Use: /lumenmc addon [addon]");
+                    return true;
+                }
+
+                String[] subArgs = Arrays.copyOfRange(args, 2, args.length);
+                return addonCommand.execute(sender, subArgs);
+            }
         }
         if (command.getName().equalsIgnoreCase("webhook") && sender instanceof Player) {
             if (args.length == 0) {
@@ -639,11 +681,39 @@ public class Monitor extends JavaPlugin implements Listener {
                     sender.sendMessage("Use: /webhook add [webhookName] [webhookUrl]");
                     return true;
                 }
+                int maxUserWebhooks = 5;
+                ConfigurationSection section = getConfig().getConfigurationSection("max_user_webhooks");
+                assert section != null;
+                Set<String> keys = section.getKeys(false);
+                if (perms != null) {
+                    for (String key : keys) {
+                        if (key.equalsIgnoreCase(perms.getPrimaryGroup((Player) sender))) {
+                            maxUserWebhooks = section.getInt(key);
+                            break;
+                        }
+                        maxUserWebhooks = section.getInt("default");
+                    }
+                } else {
+                    maxUserWebhooks = section.getInt("default");
+                }
                 if (!webhookTest(args[2])) {
                     sender.sendMessage("Webhook url is invalid!");
                     return true;
                 }
-                sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
+                int userWebhookCount;
+                if (UserWebhook.userWebhookCount.get(((Player) sender).getUniqueId()) == null) {
+                    userWebhookCount = 0;
+                } else {
+                    userWebhookCount = UserWebhook.userWebhookCount.get(((Player) sender).getUniqueId());
+                }
+                if (userWebhookCount <= maxUserWebhooks) {
+                    sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
+                } else if (maxUserWebhooks == -1) {
+                    sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
+                } else {
+                    sender.sendMessage("§cMaximum amount of webhooks reached");
+                }
+
                 return true;
             }
             if (args[0].equalsIgnoreCase("remove")) {
@@ -651,7 +721,11 @@ public class Monitor extends JavaPlugin implements Listener {
                     sender.sendMessage("Use: /webhook remove [webhookName]");
                     return true;
                 }
-                sender.sendMessage(UserWebhook.removeUserWebhook(args, ((Player) sender).getUniqueId(), args[1]));
+                if (webhooksNames.contains(args[1] + "_" + ((Player) sender).getUniqueId())) {
+                    sender.sendMessage(UserWebhook.removeUserWebhook(args, ((Player) sender).getUniqueId(), args[1]));
+                } else {
+                    sender.sendMessage("§cThat webhook doesn't exist!");
+                }
                 return true;
             }
             if (args[0].equalsIgnoreCase("list")) {
@@ -736,6 +810,24 @@ public class Monitor extends JavaPlugin implements Listener {
                     return true;
                 }
             }
+
+            if (args[0].equalsIgnoreCase("addon")) {
+                if (args.length == 1) {
+                    sender.sendMessage("Use: /webhook addon [addon]");
+                    return true;
+                }
+
+                AddonCommand addonCommand = commandRegistry.getFromWebhook(args[1]);
+
+                if (addonCommand == null) {
+                    sender.sendMessage("Use: /webhook addon [addon]");
+                    return true;
+                }
+
+                String[] subArgs = Arrays.copyOfRange(args, 2, args.length);
+                return addonCommand.execute(sender, subArgs);
+            }
+
             sender.sendMessage("Use: /webhook add|remove|config|list");
             return true;
         } else {
@@ -759,6 +851,7 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("webhook");
             list.add("config");
             list.add("send");
+            list.add("addon");
             list.sort(null);
             return list;
         }
@@ -776,11 +869,38 @@ public class Monitor extends JavaPlugin implements Listener {
             list.add("remove");
             list.add("list");
             list.add("config");
+            list.add("addon");
             return list;
+        }
+        if (command.getName().equalsIgnoreCase("webhook") && args.length >= 2 && args[0].equalsIgnoreCase("addon")) {
+            if (args.length == 2) {
+                return commandRegistry.getAllWebhook().stream().map(AddonCommand::name).toList();
+            }
+            AddonCommand addonCommand = commandRegistry.getFromWebhook(args[1]);
+            if (addonCommand == null) return list;
+            return addonCommand.tabComplete(sender, Arrays.copyOfRange(args, 2, args.length));
+        }
+        if (command.getName().equalsIgnoreCase("lumenmc") && args.length >= 2 && args[0].equalsIgnoreCase("addon")) {
+            if (args.length == 2) {
+                return commandRegistry.getAllMonitor().stream().map(AddonCommand::name).toList();
+            }
+            AddonCommand addonCommand = commandRegistry.getFromMonitor(args[1]);
+            if (addonCommand == null) return list;
+            return addonCommand.tabComplete(sender, Arrays.copyOfRange(args, 2, args.length));
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 3 && args[0].equalsIgnoreCase("webhook") && args[1].equalsIgnoreCase("remove")) {
             webhooksNames.remove("default");
             return webhooksNames;
+        }
+        if (command.getName().equalsIgnoreCase("webhook") && args.length == 2 && args[0].equalsIgnoreCase("remove")) {
+            if (sender instanceof Player) {
+                for (String webhook : webhooksNames) {
+                    if (webhook.contains(((Player) sender).getUniqueId().toString())) {
+                        list.add(webhook.replace("_" + ((Player) sender).getUniqueId(), ""));
+                    }
+                }
+            }
+            return list;
         }
         if (command.getName().equalsIgnoreCase("lumenmc") && args.length == 2 && args[0].equalsIgnoreCase("config")) {
             list = getConfig().getKeys(true).stream().toList();
@@ -838,16 +958,12 @@ public class Monitor extends JavaPlugin implements Listener {
     }
 
     // Help methods
-    public void fireContent(String content) {
-        for (Webhook webhook : webhooks.values()) {
-            webhook.enqueueIfAllowed(content);
-        }
+    public void fireContent(String content, Webhook webhook) {
+        Webhook.sendContent(content, URI.create(webhook.confLoader.url));
     }
 
-    public void fireEmbed(String embedJson) {
-        for (Webhook webhook : webhooks.values()) {
-            webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedJson));
-        }
+    public void fireEmbed(String embedJson, Webhook webhook) {
+        webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embedJson));
     }
 
     private String prettyMode(GameMode mode) {

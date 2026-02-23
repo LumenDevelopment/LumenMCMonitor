@@ -1,5 +1,6 @@
 package cloud.lumenvm.monitor;
 
+import cloud.lumenvm.api.AddonContext;
 import cloud.lumenvm.api.MonitorAPI;
 import cloud.lumenvm.api.MonitorAddon;
 
@@ -9,6 +10,8 @@ import java.net.URLClassLoader;
 import java.util.*;
 
 public class AddonManager {
+
+    // TODO Comments
 
     private final MonitorAPI api;
     private final List<MonitorAddon> loadedAddons = new ArrayList<>();
@@ -30,14 +33,16 @@ public class AddonManager {
         try {
             URLClassLoader loader = new URLClassLoader(
                     new URL[]{file.toURI().toURL()},
-                    this.getClass().getClassLoader()
+                    plugin.getClass().getClassLoader()
             );
 
             ServiceLoader<MonitorAddon> serviceLoader =
                     ServiceLoader.load(MonitorAddon.class, loader);
 
             for (MonitorAddon addon : serviceLoader) {
-                addon.onLoad(api);
+                File addonFolder = new File(plugin.getDataFolder(), file.getName().replace(".jar", ""));
+                AddonContext context = new AddonContext(addonFolder, file);
+                addon.onLoad(api, context);
                 loadedAddons.add(addon);
                 plugin.getServer().getConsoleSender().sendMessage("§aLoaded addon: §r" + addon.getName());
             }

@@ -10,10 +10,8 @@ def now = new Date()
 def versionFormat = new SimpleDateFormat("yyyy-MM-dd-HHmmss")
 dateVersion = "dev" + versionFormat.format(now)
 
-println "Artifact version is set to $version"
-
 group = 'cloud.lumenvm.monitor'
-version = 'b1.3'
+version = 'b1.4'
 
 repositories {
     mavenCentral()
@@ -21,6 +19,7 @@ repositories {
     maven {url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
     maven {url 'https://repo.extendedclip.com/releases/'}
     maven {url 'https://repo.extendedclip.com/releases/'}
+    maven {url 'https://jitpack.io/'}
 }
 
 java {
@@ -35,9 +34,11 @@ dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT'
     implementation 'commons-io:commons-io:2.21.0'
     compileOnly 'me.clip:placeholderapi:2.11.7'
+    compileOnly 'com.github.MilkBowl:VaultAPI:1.7'
 }
 
 publishing {
+    println "Artifact version is set to $dateVersion"
     publications {
         gpr(MavenPublication) {
             from components.java
@@ -52,7 +53,7 @@ publishing {
     repositories {
         maven {
             name = "nexus"
-            url = uri("https://maven.lumenvm.cloud/repository/dev/")
+            url = uri("https://maven.lumenvm.cloud/repository/release/")
 
             credentials {
                 username = project.findProperty("nexus.user")
@@ -73,8 +74,8 @@ tasks.named("build") {
 }
 
 tasks.javadoc{
+    javadoc.title = 'LumenMCMonitor ' + version + ' API'
     include("cloud/lumenvm/api/**")
-    include("cloud/lumenvm/TemplateAddon.java")
     exclude("**/internal/**")
 }
 

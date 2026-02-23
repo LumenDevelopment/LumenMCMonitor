@@ -1,5 +1,5 @@
 ##############################
-########## General ##########
+########## General ###########
 ##############################
 
 # Default: en_US
@@ -18,14 +18,23 @@ username: "LumenMC"
 # Set avatar image for discord webhook
 avatar_url: "https://cdn.lumenvm.cloud/lumenmc_monitor.png"
 
+# Embed image
+embed_image_url: "https://cdn.lumenvm.cloud/lumenmc-banner.png"
+
 # Set server name
 server_name: "Server"
 
+max_user_webhooks:
+  default: 4
+  vip: 9
+  admin: -1
+
+# UUIDs of players who set up their webhooks will showup here
 user_configs: []
 
 webhooks:
   default:
-    # URL of discord webhook (Do not change if you're using LumenMC in Pterodactyl)
+    # URL of discord webhook
     url: https://discord.com/api/webhooks/XXXXXXXXXXX/XXXXXXXXXXX
 
     # Enable if you want to send logs

@@ -7,6 +7,8 @@ import java.util.*;
 
 public class UserWebhook extends Webhook{
 
+    // TODO Comments
+
     private static Monitor plugin;
 
     static File userdataDirectory;
@@ -14,12 +16,12 @@ public class UserWebhook extends Webhook{
 
     UUID playerUUID;
 
-    public static Map<UUID, Integer> userWebhookCount;
+    public static Map<UUID, Integer> userWebhookCount = new HashMap<>();
 
     UserWebhook(String name, UUID playerUUID) {
         super(name, true, playerUUID);
 
-        userWebhookCount = new HashMap<>();
+
         userWebhookCount.putIfAbsent(playerUUID, 0);
         userWebhookCount.put(playerUUID, userWebhookCount.get(playerUUID) + 1);
 
@@ -73,12 +75,6 @@ public class UserWebhook extends Webhook{
         File userdata = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
         YamlConfiguration webhookConfig = YamlConfiguration.loadConfiguration(userdata);
 
-        for (String key : webhookConfig.getKeys(false)) {
-            if (key.equalsIgnoreCase(args[1])) {
-                return "§cThat webhook doesn't exist!";
-            }
-        }
-
         webhookConfig.set(name, null);
 
         try {
@@ -100,5 +96,12 @@ public class UserWebhook extends Webhook{
 
     public static void setPlugin(Monitor plugin) {
         UserWebhook.plugin = plugin;
+    }
+
+    public static List<String> getEnabledUserWebhooks(UUID playerUUID) {
+        File playerConfigFile = new File(plugin.getDataFolder(), "userdata/" + playerUUID + ".yml");
+
+        YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerConfigFile);
+        return playerConfig.getKeys(false).stream().toList();
     }
 }

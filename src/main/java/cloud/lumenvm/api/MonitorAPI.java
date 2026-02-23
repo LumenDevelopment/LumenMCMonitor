@@ -2,11 +2,11 @@ package cloud.lumenvm.api;
 
 import cloud.lumenvm.monitor.Embed;
 import cloud.lumenvm.monitor.Monitor;
-import org.bukkit.plugin.java.JavaPlugin;
+import cloud.lumenvm.monitor.Webhook;
 
 import java.util.Map;
 
-/**This class is used to communicate between the addon and the main plugin.*/
+/**Used to communicate between the addon and the main plugin.*/
 public class MonitorAPI {
 
     /**Monitor plugin.*/
@@ -26,25 +26,35 @@ public class MonitorAPI {
 
     /**Send messages
      * @param content {@link java.lang.String} content
+     * @param webhook {@link Webhook} that the content will be sent to
      */
-    public void fireContent(String content) {
-        plugin.fireContent(content);
+    public void fireContent(String content, Webhook webhook) {
+        plugin.fireContent(content, webhook);
     }
 
     /**Send embeds. To load them use {@link #getEmbeds() getEmbeds().get("my_embed")} (a JSON embed has to be in the embeds folder).
      * @param embedJson the embed JSON
+     * @param webhook {@link Webhook} that the embed will be sent to
      */
-    public void fireEmbed(String embedJson) {
-        plugin.fireEmbed(embedJson);
+    public void fireEmbed(String embedJson, Webhook webhook) {
+        plugin.fireEmbed(embedJson, webhook);
     }
 
     /**@return the LumenMC Monitor plugin*/
-    public JavaPlugin getPlugin() {
+    public Monitor getPlugin() {
         return plugin;
     }
 
     /**@return the available embeds*/
     public Map<String, Embed> getEmbeds() {
         return embeds;
+    }
+
+    /**
+     * Register commands
+     * @param addonCommand command you created
+     * */
+    public void registerCommand(AddonCommand addonCommand) {
+        plugin.commandRegistry.register(addonCommand);
     }
 }
