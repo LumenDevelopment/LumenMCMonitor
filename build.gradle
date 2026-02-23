@@ -74,8 +74,8 @@ tasks.named("build") {
 }
 
 tasks.javadoc{
+    javadoc.title = 'LumenMCMonitor ' + dateVersion + ' API'
     include("cloud/lumenvm/api/**")
-    include("cloud/lumenvm/template/**")
     exclude("**/internal/**")
 }
 
