@@ -336,7 +336,7 @@ public class Monitor extends JavaPlugin implements Listener {
             if (!webhook.confLoader.sendDeaths) continue;
             if (msg == null || msg.isBlank()) return;
             if (webhook.confLoader.embedsDeathsEnabled) {
-                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getEntity(), embeds.get("death").embed.replace("%lumenmc_deathmsg%", msg)));
+                webhook.sendJson(PlaceholderAPI.setPlaceholders(event.getEntity(), embeds.get("death").embed.replace("%player_deathmsg%", msg)));
             } else {
                 String content = prettyTime() + langLoader.get("on_death");
                 content = content.replace("%lumenmc_deathmsg%", msg);
