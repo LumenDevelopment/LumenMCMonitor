@@ -19,4 +19,6 @@ dependencies {
 }
 ```
 
+More information at our [wiki](https://docs.lumenvm.cloud/).
+
 You can take the advantage of our template [addon repo](https://github.com/LumenDevelopment/LumenMCMonitor-Addons).
