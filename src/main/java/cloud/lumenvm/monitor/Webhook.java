@@ -72,7 +72,7 @@ public class Webhook {
 
         this.userWebhook = userWebhook;
 
-        // Set config loader by name
+        // Decide what config class to use
         if (userWebhook) {
             this.confLoader = new UserConfigLoader(name, uuid);
         } else {

@@ -48,6 +48,7 @@ public class ConfigLoader {
     public final String WEBHOOK_URL = System.getenv("WEBHOOK_URL");
 
     public ConfigLoader(String name, boolean userWebhook) {
+        // Executes only if this isn't user webhook
         if (!userWebhook) {
             debug = plugin.getConfig().getBoolean("debug", false);
             this.name = name;
