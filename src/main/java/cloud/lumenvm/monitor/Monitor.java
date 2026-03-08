@@ -44,7 +44,7 @@ import java.util.logging.Level;
 //    ▌ ▌▌▛▛▌█▌▛▌▛▖▞▌▌   ▛▖▞▌▛▌▛▌▌▜▘▛▌▛▘
 //    ▙▖▙▌▌▌▌▙▖▌▌▌▝ ▌▙▖  ▌▝ ▌▙▌▌▌▌▐▖▙▌▌
 //
-// TODO Organize code and add comments
+//    LumenMC Monitor by LumenDevelopment
 
 public class Monitor extends JavaPlugin implements Listener {
 
