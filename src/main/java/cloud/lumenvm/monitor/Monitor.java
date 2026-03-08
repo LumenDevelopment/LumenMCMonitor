@@ -480,11 +480,8 @@ public class Monitor extends JavaPlugin implements Listener {
                         return true;
                     }
                     StringBuilder newObject = new StringBuilder(args[3]);
-                    // FIXME Fix this stupid warning
-                    if (args.length > 3) {
-                        for (int i = 4; i < args.length ; i++) {
-                            newObject.append(" ").append(args[i]);
-                        }
+                    for (int i = 4; i < args.length; i++) {
+                        newObject.append(" ").append(args[i]);
                     }
                     try {
                         sender.sendMessage(langLoader.editLang(key, newObject.toString()));
