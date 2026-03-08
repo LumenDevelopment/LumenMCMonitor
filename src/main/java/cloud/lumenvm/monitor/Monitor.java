@@ -248,7 +248,7 @@ public class Monitor extends JavaPlugin implements Listener {
                 if (webhook.confLoader.embedsStartStopEnabled) {
                     webhook.sendJson(PlaceholderAPI.setPlaceholders(null, embeds.get("start").embed));
                 } else {
-                    String content = prettyTime() + "[SERVER] Startup complete. For help, type \"help\"";
+                    String content = prettyTime() + langLoader.get("server_start");
                     webhook.enqueueIfAllowed(content);
                 }
                 starting = false;
@@ -670,168 +670,170 @@ public class Monitor extends JavaPlugin implements Listener {
                 return addonCommand.execute(sender, subArgs);
             }
         }
-        if (command.getName().equalsIgnoreCase("webhook") && sender instanceof Player) {
-            if (args.length == 0) {
-                sender.sendMessage("Use: /webhook add|remove|config|list");
-                return true;
-            }
-
-            if (args[0].equalsIgnoreCase("add")) {
-                if (args.length == 1) {
-                    sender.sendMessage("Use: /webhook add [webhookName] [webhookUrl]");
+        if (command.getName().equalsIgnoreCase("webhook")) {
+            if (sender instanceof Player) {
+                if (args.length == 0) {
+                    sender.sendMessage("Use: /webhook add|remove|config|list");
                     return true;
                 }
-                int maxUserWebhooks = 5;
-                ConfigurationSection section = getConfig().getConfigurationSection("max_user_webhooks");
-                assert section != null;
-                Set<String> keys = section.getKeys(false);
-                if (perms != null) {
-                    for (String key : keys) {
-                        if (key.equalsIgnoreCase(perms.getPrimaryGroup((Player) sender))) {
-                            maxUserWebhooks = section.getInt(key);
-                            break;
+
+                if (args[0].equalsIgnoreCase("add")) {
+                    if (args.length == 1) {
+                        sender.sendMessage("Use: /webhook add [webhookName] [webhookUrl]");
+                        return true;
+                    }
+                    int maxUserWebhooks = 5;
+                    ConfigurationSection section = getConfig().getConfigurationSection("max_user_webhooks");
+                    assert section != null;
+                    Set<String> keys = section.getKeys(false);
+                    if (perms != null) {
+                        for (String key : keys) {
+                            if (key.equalsIgnoreCase(perms.getPrimaryGroup((Player) sender))) {
+                                maxUserWebhooks = section.getInt(key);
+                                break;
+                            }
+                            maxUserWebhooks = section.getInt("default");
                         }
+                    } else {
                         maxUserWebhooks = section.getInt("default");
                     }
-                } else {
-                    maxUserWebhooks = section.getInt("default");
-                }
-                if (!webhookTest(args[2])) {
-                    sender.sendMessage("Webhook url is invalid!");
-                    return true;
-                }
-                int userWebhookCount;
-                if (UserWebhook.userWebhookCount.get(((Player) sender).getUniqueId()) == null) {
-                    userWebhookCount = 0;
-                } else {
-                    userWebhookCount = UserWebhook.userWebhookCount.get(((Player) sender).getUniqueId());
-                }
-                if (userWebhookCount <= maxUserWebhooks) {
-                    sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
-                } else if (maxUserWebhooks == -1) {
-                    sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
-                } else {
-                    sender.sendMessage("§cMaximum amount of webhooks reached");
-                }
-
-                return true;
-            }
-            if (args[0].equalsIgnoreCase("remove")) {
-                if (args.length == 1) {
-                    sender.sendMessage("Use: /webhook remove [webhookName]");
-                    return true;
-                }
-                if (webhooksNames.contains(args[1] + "_" + ((Player) sender).getUniqueId())) {
-                    sender.sendMessage(UserWebhook.removeUserWebhook(args, ((Player) sender).getUniqueId(), args[1]));
-                } else {
-                    sender.sendMessage("§cThat webhook doesn't exist!");
-                }
-                return true;
-            }
-            if (args[0].equalsIgnoreCase("list")) {
-                List<String> userWebhooks = new ArrayList<>();
-                for (String name : webhooksNames) {
-                    if (name.contains(((Player) sender).getUniqueId().toString())) {
-                        userWebhooks.add(name.replace("_" + ((Player) sender).getUniqueId(), ""));
+                    if (!webhookTest(args[2])) {
+                        sender.sendMessage("Webhook url is invalid!");
+                        return true;
                     }
-                }
-                for (int i = 0; i < userWebhooks.size(); i++) {
-                    sender.sendMessage("[§a" + (i + 1) + "§r.] " + userWebhooks.get(i));
-                }
-                return true;
-            }
-            if (args[0].equalsIgnoreCase("config")) {
-                if (args.length == 1) {
-                    sender.sendMessage("Use: /webhook config [key] [value]");
+                    int userWebhookCount;
+                    if (UserWebhook.userWebhookCount.get(((Player) sender).getUniqueId()) == null) {
+                        userWebhookCount = 0;
+                    } else {
+                        userWebhookCount = UserWebhook.userWebhookCount.get(((Player) sender).getUniqueId());
+                    }
+                    if (userWebhookCount <= maxUserWebhooks) {
+                        sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
+                    } else if (maxUserWebhooks == -1) {
+                        sender.sendMessage(UserWebhook.addUserWebhook(args, ((Player) sender).getUniqueId(), args[1], args[2]));
+                    } else {
+                        sender.sendMessage("§cMaximum amount of webhooks reached");
+                    }
+
                     return true;
                 }
-                File userdata = new File(getDataFolder(), "userdata/" + getUUID(sender.getName()) + ".yml");
-                YamlConfiguration config = YamlConfiguration.loadConfiguration(userdata);
-                if (args.length == 2) {
-                    sender.sendMessage("§aThe value of §r" + args[1] + " §ais §r" + Objects.requireNonNull(config.get(args[1])));
+                if (args[0].equalsIgnoreCase("remove")) {
+                    if (args.length == 1) {
+                        sender.sendMessage("Use: /webhook remove [webhookName]");
+                        return true;
+                    }
+                    if (webhooksNames.contains(args[1] + "_" + ((Player) sender).getUniqueId())) {
+                        sender.sendMessage(UserWebhook.removeUserWebhook(args, ((Player) sender).getUniqueId(), args[1]));
+                    } else {
+                        sender.sendMessage("§cThat webhook doesn't exist!");
+                    }
                     return true;
                 }
-                if (args.length == 3) {
-                    for (String name : userWebhookNames) {
-                        if (args[1].equalsIgnoreCase(name.substring(0, name.length() - 37))) {
-                            sender.sendMessage("§cYou can't edit that");
+                if (args[0].equalsIgnoreCase("list")) {
+                    List<String> userWebhooks = new ArrayList<>();
+                    for (String name : webhooksNames) {
+                        if (name.contains(((Player) sender).getUniqueId().toString())) {
+                            userWebhooks.add(name.replace("_" + ((Player) sender).getUniqueId(), ""));
+                        }
+                    }
+                    for (int i = 0; i < userWebhooks.size(); i++) {
+                        sender.sendMessage("[§a" + (i + 1) + "§r.] " + userWebhooks.get(i));
+                    }
+                    return true;
+                }
+                if (args[0].equalsIgnoreCase("config")) {
+                    if (args.length == 1) {
+                        sender.sendMessage("Use: /webhook config [key] [value]");
+                        return true;
+                    }
+                    File userdata = new File(getDataFolder(), "userdata/" + getUUID(sender.getName()) + ".yml");
+                    YamlConfiguration config = YamlConfiguration.loadConfiguration(userdata);
+                    if (args.length == 2) {
+                        sender.sendMessage("§aThe value of §r" + args[1] + " §ais §r" + Objects.requireNonNull(config.get(args[1])));
+                        return true;
+                    }
+                    if (args.length == 3) {
+                        for (String name : userWebhookNames) {
+                            if (args[1].equalsIgnoreCase(name.substring(0, name.length() - 37))) {
+                                sender.sendMessage("§cYou can't edit that");
+                                return true;
+                            }
+                        }
+                        if (args[1].contains("ignore_patterns")) {
+                            List<String> filter = config.getStringList(args[1]);
+                            if (filter.contains(args[2])) {
+                                filter.remove(args[2]);
+                            } else {
+                                filter.add(args[2]);
+                            }
+                            config.set(args[1], filter);
+                            try {
+                                config.save(userdata);
+                            } catch (IOException e) {
+                                getLogger().severe("Error when saving config: " + e);
+                            }
+                            pluginReload();
+                            sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
                             return true;
                         }
-                    }
-                    if (args[1].contains("ignore_patterns")) {
-                        List<String> filter = config.getStringList(args[1]);
-                        if (filter.contains(args[2])) {
-                            filter.remove(args[2]);
-                        } else {
-                            filter.add(args[2]);
+                        if (args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false")) {
+                            boolean option = Boolean.parseBoolean(args[2]);
+                            config.set(args[1], option);
+                            try {
+                                config.save(userdata);
+                            } catch (IOException e) {
+                                getLogger().severe("Error when saving config: " + e);
+                            }
+                            pluginReload();
+                            sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
+                            return true;
                         }
-                        config.set(args[1], filter);
                         try {
-                            config.save(userdata);
-                        } catch (IOException e) {
-                            getLogger().severe("Error when saving config: " + e);
+                            int number = Integer.parseInt(args[2]);
+                            config.set(args[1], number);
+                            try {
+                                config.save(userdata);
+                            } catch (IOException e) {
+                                getLogger().severe("Error when saving config: " + e);
+                            }
+                            pluginReload();
+                            sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
+                        } catch (Exception e) {
+                            config.set(args[1], args[2]);
+                            try {
+                                config.save(userdata);
+                            } catch (IOException ee) {
+                                getLogger().severe("Error when saving config: " + ee);
+                            }
+                            pluginReload();
+                            sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
                         }
-                        pluginReload();
-                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
                         return true;
                     }
-                    if (args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false")) {
-                        boolean option = Boolean.parseBoolean(args[2]);
-                        config.set(args[1], option);
-                        try {
-                            config.save(userdata);
-                        } catch (IOException e) {
-                            getLogger().severe("Error when saving config: " + e);
-                        }
-                        pluginReload();
-                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
+                }
+
+                if (args[0].equalsIgnoreCase("addon")) {
+                    if (args.length == 1) {
+                        sender.sendMessage("Use: /webhook addon [addon]");
                         return true;
                     }
-                    try {
-                        int number = Integer.parseInt(args[2]);
-                        config.set(args[1], number);
-                        try {
-                            config.save(userdata);
-                        } catch (IOException e) {
-                            getLogger().severe("Error when saving config: " + e);
-                        }
-                        pluginReload();
-                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
-                    } catch (Exception e) {
-                        config.set(args[1], args[2]);
-                        try {
-                            config.save(userdata);
-                        } catch (IOException ee) {
-                            getLogger().severe("Error when saving config: " + ee);
-                        }
-                        pluginReload();
-                        sender.sendMessage("§aOption §r" + args[1] + " §awas set to §r" + config.get(args[1]));
+
+                    AddonCommand addonCommand = commandRegistry.getFromWebhook(args[1]);
+
+                    if (addonCommand == null) {
+                        sender.sendMessage("Use: /webhook addon [addon]");
+                        return true;
                     }
-                    return true;
+
+                    String[] subArgs = Arrays.copyOfRange(args, 2, args.length);
+                    return addonCommand.execute(sender, subArgs);
                 }
+
+                sender.sendMessage("Use: /webhook add|remove|config|list");
+                return true;
+            } else {
+                sender.sendMessage("§cOnly players can use this command");
             }
-
-            if (args[0].equalsIgnoreCase("addon")) {
-                if (args.length == 1) {
-                    sender.sendMessage("Use: /webhook addon [addon]");
-                    return true;
-                }
-
-                AddonCommand addonCommand = commandRegistry.getFromWebhook(args[1]);
-
-                if (addonCommand == null) {
-                    sender.sendMessage("Use: /webhook addon [addon]");
-                    return true;
-                }
-
-                String[] subArgs = Arrays.copyOfRange(args, 2, args.length);
-                return addonCommand.execute(sender, subArgs);
-            }
-
-            sender.sendMessage("Use: /webhook add|remove|config|list");
-            return true;
-        } else {
-            sender.sendMessage("§cOnly players can use this command");
         }
         return false;
     }
