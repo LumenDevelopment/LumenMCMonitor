@@ -18,7 +18,7 @@ username: "LumenMC"
 # Set avatar image for discord webhook
 avatar_url: "https://cdn.lumenvm.cloud/lumenmc_monitor.png"
 
-# Embed image
+# Embed image (set to "none" if you want none)
 embed_image_url: "https://cdn.lumenvm.cloud/lumenmc-banner.png"
 
 # Set server name

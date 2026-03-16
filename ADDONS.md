@@ -19,4 +19,4 @@ dependencies {
 }
 ```
 
-You can take the advantage of our template [addon repo](https://github.com/LumenDevelopment/LumenMCMonitor-Addons).
+You can take the advantage of our [template repo](https://github.com/LumenDevelopment/LumenMCMonitor-Addons).

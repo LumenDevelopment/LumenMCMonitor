@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.Objects;
 
 public class Embed {
     // Plugin
@@ -29,6 +30,10 @@ public class Embed {
 
         // Load JSON
         embed = readJson("embeds/" + name + ".json", "embeds/" + name + ".json");
+
+        if (Objects.requireNonNull(plugin.getConfig().getString("embed_image_url")).equalsIgnoreCase("none")) {
+            embed = embed.replace("\"image\":{\"url\":\"%lumenmc_image%\"},", "");
+        }
     }
 
     private String readJson(String fileName, String child) {
