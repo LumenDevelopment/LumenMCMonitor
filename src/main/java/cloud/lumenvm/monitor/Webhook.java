@@ -341,8 +341,8 @@ public class Webhook {
         for (String pattern : confLoader.ignorePatterns) {
             if (pattern == null || pattern.isBlank()) continue;
             try {
-                if (msg.toLowerCase().contains(pattern)) {
-                    msg = msg.toLowerCase().replace(pattern, "\\*\\*\\*\\*\\*");
+                if (msg.toLowerCase().contains(pattern.toLowerCase())) {
+                    msg = msg.toLowerCase().replace(pattern.toLowerCase(), "\\*\\*\\*\\*\\*");
                 }
             }
             catch (Exception ignored) {}
