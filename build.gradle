@@ -11,7 +11,7 @@ def versionFormat = new SimpleDateFormat("yyyy-MM-dd-HHmmss")
 dateVersion = "dev" + versionFormat.format(now)
 
 group = 'cloud.lumenvm.monitor'
-version = 'b1.4'
+version = 'v1.0'
 
 repositories {
     mavenCentral()
