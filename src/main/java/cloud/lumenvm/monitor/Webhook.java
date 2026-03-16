@@ -72,7 +72,7 @@ public class Webhook {
 
         this.userWebhook = userWebhook;
 
-        // Set config loader by name
+        // Decide what config class to use
         if (userWebhook) {
             this.confLoader = new UserConfigLoader(name, uuid);
         } else {
@@ -341,8 +341,8 @@ public class Webhook {
         for (String pattern : confLoader.ignorePatterns) {
             if (pattern == null || pattern.isBlank()) continue;
             try {
-                if (msg.contains(pattern)) {
-                    msg = msg.replace(pattern, "\\*\\*\\*\\*\\*");
+                if (msg.toLowerCase().contains(pattern.toLowerCase())) {
+                    msg = msg.toLowerCase().replace(pattern.toLowerCase(), "\\*\\*\\*\\*\\*");
                 }
             }
             catch (Exception ignored) {}

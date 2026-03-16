@@ -9,14 +9,19 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
 
+// Managing addons
 public class AddonManager {
 
-    // TODO Comments
-
+    // API
     private final MonitorAPI api;
+
+    // Addons
     private final List<MonitorAddon> loadedAddons = new ArrayList<>();
+
+    // Plugin instance
     private final Monitor plugin;
 
+    // Addon manager instance
     public AddonManager(Monitor plugin) {
         this.api = new MonitorAPI(plugin, plugin.embeds);
         this.plugin = plugin;
@@ -29,6 +34,7 @@ public class AddonManager {
         }
     }
 
+    // Loads addon and triggers onLoad function inside the addon
     private void loadAddon(File file) {
         try {
             URLClassLoader loader = new URLClassLoader(
@@ -51,6 +57,7 @@ public class AddonManager {
         }
     }
 
+    // Triggers unLoad function inside all of the addons
     public void unLoad() {
         for (MonitorAddon addon : loadedAddons) {
             try {
