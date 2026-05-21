@@ -11,7 +11,7 @@ def versionFormat = new SimpleDateFormat("yyyy-MM-dd-HHmmss")
 dateVersion = "dev" + versionFormat.format(now)
 
 group = 'cloud.lumenvm.monitor'
-version = 'v1.0'
+version = 'v1.1'
 
 repositories {
     mavenCentral()
@@ -69,8 +69,8 @@ tasks.register("mystuff", Exec) {
 }
 
 tasks.named("build") {
-    dependsOn 'mystuff'
     dependsOn 'publishToMavenLocal'
+    dependsOn 'mystuff'
 }
 
 tasks.javadoc{
