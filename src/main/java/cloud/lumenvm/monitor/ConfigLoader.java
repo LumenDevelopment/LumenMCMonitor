@@ -103,7 +103,7 @@ public class ConfigLoader {
             sendJoinQuit = plugin.getConfig().getBoolean("webhooks." + name + ".send_join_quit", true);
             sendDeaths = plugin.getConfig().getBoolean("webhooks." + name + ".send_deaths", true);
             sendGamemodeChanges = plugin.getConfig().getBoolean("webhooks." + name + ".send_gamemode_changes", true);
-            sendServerLoad = plugin.getConfig().getBoolean("webhooks." + name + ".send_server_load", true);
+            sendServerLoad = plugin.getConfig().getBoolean("webhooks." + name + ".send_server_start_stop", true);
 
             // Embeds
             embedsStartStopEnabled = plugin.getConfig().getBoolean("webhooks." + name + ".embeds_start_stop_enabled", true);

@@ -34,7 +34,7 @@
         },
         {
           "name":"Server name",
-          "value":"%lumenmc_serverver%",
+          "value":"%lumenmc_server_name%",
           "inline":true
         }
       ]
