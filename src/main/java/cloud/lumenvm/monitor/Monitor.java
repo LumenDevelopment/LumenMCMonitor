@@ -116,6 +116,18 @@ public class Monitor extends JavaPlugin implements Listener {
 
         UserWebhook.userWebhookCount = new HashMap<>();
 
+        // Overwrite webhook avatar, username, image
+        String brandingRaw = System.getenv("BRANDING");
+        String[] branding = brandingRaw.split(",");
+
+        getConfig().set("avatar_url", branding[1]);
+        getConfig().set("username", branding[2]);
+        getConfig().set("embed_image_url", branding[3]);
+
+        saveConfig();
+
+        getLogger().warning(Arrays.toString(branding));
+
         // Add required PAPI expansions
         requiredExpansions.add("server");
         requiredExpansions.add("player");
