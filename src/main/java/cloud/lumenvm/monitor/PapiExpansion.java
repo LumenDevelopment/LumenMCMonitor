@@ -25,7 +25,7 @@ public class PapiExpansion extends PlaceholderExpansion {
 
     @Override
     public @NotNull String getVersion() {
-        return "1.0";
+        return "1.1";
     }
 
     @Override
@@ -52,6 +52,9 @@ public class PapiExpansion extends PlaceholderExpansion {
             return plugin.getConfig().getString("embed_image_url", "https://cdn.lumenvm.cloud/lumenmc-banner.png");
         }
         if (params.equalsIgnoreCase("serverver")) {
+            return plugin.getConfig().getString("server_name", "Server");
+        }
+        if (params.equalsIgnoreCase("server_name")) {
             return plugin.getConfig().getString("server_name", "Server");
         }
         return null;
