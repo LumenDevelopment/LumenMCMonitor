@@ -1,5 +1,5 @@
 name: 'LumenMCMonitor'
-version: 'v1.1.1-hotfix'
+version: '1.1.2-hotfix'
 main: cloud.lumenvm.monitor.Monitor
 api-version: "1.18"
 authors: ["Lumen Development", "SNVK"]
