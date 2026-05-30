@@ -81,7 +81,7 @@ public class Webhook {
 
         // Check if failed to load config
         if (confLoader.failedToLoadConfig) {
-            plugin.getLogger().severe("Webhook URL is NOT set. Pleas adjust pterodactyl server configuration/config.yml accordingly and RESTART the server :)");
+            plugin.getLogger().severe("Webhook URL is NOT set. Please adjust pterodactyl server configuration/config.yml accordingly and RESTART the server :)");
             plugin.getServer().getPluginManager().disablePlugin(plugin);
             return;
         }
