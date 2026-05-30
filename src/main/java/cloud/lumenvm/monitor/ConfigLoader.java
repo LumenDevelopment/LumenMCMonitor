@@ -62,9 +62,9 @@ public class ConfigLoader {
                     return;
                 }
             } else if (WEBHOOK_URL != null && !WEBHOOK_URL.isBlank()) {
-                if (!plugin.webhookTest(WEBHOOK_URL)) {
+                if (plugin.webhookTest(WEBHOOK_URL)) {
                     url = WEBHOOK_URL;
-                    plugin.getConfig().set("webhook_url", url);
+                    plugin.getConfig().set("webhooks." + name + ".url", url);
                     plugin.saveConfig();
                     if (debug) {
                         plugin.getLogger().info("Debug: Discord Webhook url saved to config.yml");
